@@ -14,9 +14,9 @@ import menuCover from "./assets/menu-cover.jpg";
 // 2. Crea un "Email Service" collegando la tua email Gmail/Outlook
 // 3. Crea un "Email Template" con le variabili qui sotto
 // 4. Sostituisci i tre valori con i tuoi
-const EMAILJS_SERVICE_ID  = "service_XXXXXXX";   // ← il tuo Service ID
-const EMAILJS_TEMPLATE_ID = "template_XXXXXXX";  // ← il tuo Template ID
-const EMAILJS_PUBLIC_KEY  = "XXXXXXXXXXXXXXXXXXXX"; // ← la tua Public Key
+const EMAILJS_SERVICE_ID  = "service_b8n6lq3";   // ← il tuo Service ID
+const EMAILJS_TEMPLATE_ID = "template_lmk9tqb";  // ← il tuo Template ID
+const EMAILJS_PUBLIC_KEY  = "tKbOdM_r2oD9lbM_s"; // ← la tua Public Key
 
 // ─── TEMPLATE EMAILJS ─────────────────────────────────────────────────────────
 // Nel pannello EmailJS, crea un template con questo testo:
@@ -36,7 +36,7 @@ const EMAILJS_PUBLIC_KEY  = "XXXXXXXXXXXXXXXXXXXX"; // ← la tua Public Key
 // Rispondi al cliente per confermare: {{guest_email}}
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAPS_URL     = "https://maps.google.com/?q=Via+XX+Settembre+21+Carrara";
+const MAPS_URL     = "https://www.google.com/maps?rlz=1C5CHFA_enIT1019IT1019&gs_lcrp=EgZjaHJvbWUqFQgBEC4YFBivARjHARiHAhiABBiOBTIMCAAQIxgnGIAEGIoFMhUIARAuGBQYrwEYxwEYhwIYgAQYjgUyBggCEEUYOTITCAMQLhivARjHARiABBiYBRiZBTINCAQQLhivARjHARiABDINCAUQLhivARjHARiABDIGCAYQRRg8MgYIBxBFGD3SAQgzMTgxajBqNKgCALACAQ&um=1&ie=UTF-8&fb=1&gl=it&sa=X&geocode=KYMmRAPHD9USMapmjM1zF6Xf&daddr=Piazza+Erbe,+1,+54033+Carrara+MS";
 const INSTAGRAM_URL = "https://www.instagram.com/locandapatrizia";
 const publicImg = (name: string) => `/${name}`;
 
@@ -151,7 +151,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   // Orari disponibili
   const lunchSlots  = ["12:30", "12:45", "13:00", "13:15", "13:30", "13:45", "14:00"];
   const dinnerSlots = ["19:30", "19:45", "20:00", "20:15", "20:30", "20:45", "21:00", "21:15", "21:30"];
-  const allSlots    = [...lunchSlots, ...dinnerSlots];
+
 
   const handleSubmit = async () => {
     if (!form.guest_name || !form.guest_email || !form.date || !form.time || !form.phone) return;
@@ -212,7 +212,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
           <span className="bk-dot">·</span>
           <span>🕗 Cena 19:30 – 22:30</span>
           <span className="bk-dot">·</span>
-          <span>Chiuso il martedì</span>
+          <span>Chiuso il mercoledì</span>
         </div>
 
         {/* Contenuto — success / error / form */}
@@ -357,7 +357,7 @@ function NavIcon({ name }: { name: string }) {
 }
 
 // ─── HEADER ───────────────────────────────────────────────────────────────────
-function Header({ activePage, setActivePage, openBooking }: { activePage: string; setActivePage: (p: string) => void; openBooking: () => void }) {
+function Header({ setActivePage, openBooking }: { activePage?: string; setActivePage: (p: string) => void; openBooking: () => void }) {
   return (
     <header className="desktop-header">
       <a href="#home" className="logo-pill" aria-label="Locanda Patrizia" onClick={() => setActivePage("home")}>
@@ -380,7 +380,7 @@ function Header({ activePage, setActivePage, openBooking }: { activePage: string
 }
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
-function MobileNav({ activePage, setActivePage, openBooking }: { activePage: string; setActivePage: (p: string) => void; openBooking: () => void }) {
+function MobileNav({ activePage, setActivePage }: { activePage: string; setActivePage: (p: string) => void; openBooking?: () => void }) {
   const items = [
     { icon: "home",     label: "Home",     action: () => { setActivePage("home"); goTo("#home"); } },
     { icon: "menu",     label: "Menu",     action: () => setActivePage("menu-page") },
@@ -529,9 +529,9 @@ function Footer({ openBooking }: { openBooking: () => void }) {
         </div>
         <div>
           <h4>Contatti</h4>
-          <p>Via XX Settembre, 21<br />54033 Carrara (MS)</p>
-          <p><strong>+39 0585 123456</strong></p>
-          <p>info@locandapatrizia.it</p>
+          <p>Piazza Erbe; 1<br />54033 Carrara (MS)</p>
+          <p><strong>+39 0585 873443</strong></p>
+          <p>locandapatriziaa@gmail.com</p>
           <button className="gold-btn" onClick={openBooking} style={{ marginTop: "12px" }}>Prenota ora</button>
         </div>
         <div>
