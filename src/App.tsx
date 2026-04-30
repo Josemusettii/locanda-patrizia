@@ -243,14 +243,14 @@ function HeroImage() {
   return (
     <img
       className="hero-img"
-      src={salaHero}
+      src={isMobile ? publicImg("hero-mobile.jpg") : publicImg("hero-desktop.jpg")}
       alt="Locanda Patrizia"
       decoding="async"
       style={{
         objectPosition: isMobile ? "50% 50%" : "52% 58%",
       }}
       onError={(e) => {
-        e.currentTarget.style.display = "none";
+        e.currentTarget.src = salaHero;
       }}
     />
   );
