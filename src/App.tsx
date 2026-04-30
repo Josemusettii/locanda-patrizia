@@ -59,6 +59,7 @@ import piattoCarne    from "./assets/piatto-carne.jpg";
 import piattoCostine  from "./assets/piatto-costine.jpg";
 import piattoTaco     from "./assets/piatto-taco.jpg";
 import salaBancone    from "./assets/sala-bancone.jpg";
+import salaHero       from "./assets/sala-hero.jpg";
 import esternoCarrara from "./assets/esterno-carrara.jpg";
 import menuCover      from "./assets/menu-cover.jpg";
 
@@ -239,21 +240,17 @@ function HeroImage() {
     return () => media.removeEventListener("change", update);
   }, []);
 
-  const src = isMobile
-    ? publicImg("hero-mobile.jpg")
-    : publicImg("hero-desktop.jpg");
-
   return (
     <img
       className="hero-img"
-      src={src}
+      src={salaHero}
       alt="Locanda Patrizia"
       decoding="async"
       style={{
         objectPosition: isMobile ? "50% 50%" : "52% 58%",
       }}
       onError={(e) => {
-        e.currentTarget.src = publicImg("sala-hero.jpg");
+        e.currentTarget.style.display = "none";
       }}
     />
   );
