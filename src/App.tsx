@@ -69,9 +69,9 @@ import menuCover      from "./assets/menu-cover.jpg";
 // 3. "Email Templates" → crea template con le variabili sotto
 // 4. "Account" → copia la Public Key
 // 5. Sostituisci i tre valori:
-const EMAILJS_SERVICE_ID  = "service_XXXXXXX";    // ← Email Service ID
-const EMAILJS_TEMPLATE_ID = "template_XXXXXXX";   // ← Template ID
-const EMAILJS_PUBLIC_KEY  = "XXXXXXXXXXXXXXXXXXXX"; // ← Public Key
+const EMAILJS_SERVICE_ID  = "service_b8n6lq3";    // ← Email Service ID
+const EMAILJS_TEMPLATE_ID = "template_lmk9tqb";   // ← Template ID
+const EMAILJS_PUBLIC_KEY  = "tKbOdM_r2oD9lbM_s"; // ← Public Key
 //
 // TEMPLATE da incollare in EmailJS (soggetto + corpo):
 // ────────────────────────────────────────────────────
@@ -552,17 +552,13 @@ function Tagline() {
 }
 
 // ─── MENU SECTION ─────────────────────────────────────────────────────────────
-function MenuSection({ setActivePage, openBooking }: { setActivePage: (p: string) => void; openBooking: () => void }) {
+function MenuSection({ setActivePage }: { setActivePage: (p: string) => void }) {
   return (
     <section id="menu" className="section menu-section" aria-labelledby="menu-heading">
       <div className="section-head reveal">
         <p className="eyebrow">I nostri piatti</p>
         <div>
           <h2 id="menu-heading">Sapori che restano.</h2>
-          {/* CTA principale: filled gold */}
-          <button className="cta-filled" onClick={openBooking} aria-label="Prenota un tavolo alla Locanda Patrizia">
-            Prenota il tuo tavolo
-          </button>
         </div>
       </div>
 
@@ -863,7 +859,7 @@ export default function App() {
           <>
             <Hero openBooking={openBooking} />
             <Tagline />
-            <MenuSection setActivePage={setActivePage} openBooking={openBooking} />
+            <MenuSection setActivePage={setActivePage} />
             <LocandaSection />
             <GallerySection />
             <Footer openBooking={openBooking} />
@@ -946,7 +942,7 @@ address { font-style: normal; }
 .hero-btn-text { white-space: nowrap; }
 
 /* EYEBROW */
-.eyebrow { margin: 0 0 10px; color: var(--gold); text-transform: uppercase; letter-spacing: .32em; font-weight: 400; font-size: 11px; }
+.eyebrow { display: inline-flex; align-items: center; justify-content: center; margin: 0 0 14px; padding: 9px 22px; border: 1px solid rgba(184,146,46,.22); border-radius: 999px; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #fffaf0; text-transform: uppercase; letter-spacing: .2em; font-weight: 600; font-size: 11px; box-shadow: 0 10px 26px rgba(184,146,46,.22); }
 
 /* TAGLINE */
 @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
@@ -977,6 +973,7 @@ address { font-style: normal; }
 
 /* LOCANDA */
 .locanda-wow { width: min(1120px, calc(100% - 72px)); margin: 16px auto 0; padding: 44px 50px; border-radius: 28px; background: radial-gradient(ellipse at top left, rgba(184,146,46,.12) 0%, transparent 50%), linear-gradient(145deg, #06281f 0%, #0b4635 100%); color: white; display: grid; grid-template-columns: 1fr .7fr; gap: 48px; align-items: center; box-shadow: 0 24px 60px rgba(0,0,0,.14); }
+.locanda-wow .eyebrow { padding: 0; border: 0; border-radius: 0; background: transparent; color: rgba(255,255,255,.9); box-shadow: none; }
 .locanda-wow h2 { margin: 0 0 16px; font-family: 'Cormorant Garamond', serif; font-size: clamp(40px, 4.8vw, 64px); font-weight: 300; font-style: italic; color: white; line-height: .92; }
 .locanda-wow p { margin: 0; color: rgba(255,255,255,.88); line-height: 1.72; font-size: 16px; font-weight: 300; }
 .locanda-p2 { margin-top: 16px !important; color: rgba(255,255,255,.65) !important; font-style: italic; font-size: 15px !important; }
