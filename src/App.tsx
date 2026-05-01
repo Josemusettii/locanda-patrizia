@@ -1126,8 +1126,8 @@ address { font-style: normal; }
   body { background: #1e3c3d; font-size: 16px; }
   main { background: var(--cream); width: min(100%, 430px); margin: 0 auto; padding-bottom: 82px; }
   .desktop-header { display: none; }
-  .floating-booking-btn { position: fixed; top: 14px; right: max(14px, calc((100vw - 430px) / 2 + 14px)); z-index: 95; display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 10px 17px; border: 1px solid rgba(255,255,255,.58); border-radius: 999px; background: rgba(255,250,240,.9); color: var(--deep); font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; box-shadow: 0 8px 28px rgba(5,37,29,.16); backdrop-filter: blur(18px) saturate(1.35); transition: transform .2s, background .2s, color .2s; }
-  .floating-booking-btn:hover { transform: translateY(-1px); background: rgba(184,146,46,.94); color: #fff; }
+  .floating-booking-btn { position: fixed; top: 14px; right: max(14px, calc((100vw - 430px) / 2 + 14px)); z-index: 95; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 18px; border: 1px solid rgba(226,200,120,.54); border-radius: 999px; background: rgba(5,37,29,.72); color: #fffaf0; font-family: var(--menu-font); font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; box-shadow: 0 10px 30px rgba(5,37,29,.24); backdrop-filter: blur(18px) saturate(1.35); transition: transform .2s, background .2s, border-color .2s; }
+  .floating-booking-btn:hover { transform: translateY(-1px); background: rgba(5,37,29,.88); border-color: rgba(226,200,120,.8); }
 
   /* Nav mobile */
   .mobile-nav { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 90; width: min(390px, calc(100% - 16px)); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px 10px; border-radius: 20px; background: rgba(255,252,245,.97); backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 4px 24px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.8); }
