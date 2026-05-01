@@ -511,6 +511,14 @@ function MobileNav({ activePage, setActivePage }: { activePage: string; setActiv
   );
 }
 
+function FloatingBookingButton({ openBooking }: { openBooking: () => void }) {
+  return (
+    <button className="floating-booking-btn" onClick={openBooking} aria-label="Apri il modulo di prenotazione">
+      Prenota
+    </button>
+  );
+}
+
 // ─── HERO ─────────────────────────────────────────────────────────────────────
 function Hero({ openBooking }: { openBooking: () => void }) {
   return (
@@ -863,6 +871,7 @@ export default function App() {
         )}
       </main>
       <MobileNav activePage={activePage} setActivePage={setActivePage} />
+      <FloatingBookingButton openBooking={openBooking} />
       {bookingOpen && <BookingModal onClose={closeBooking} />}
       <style>{CSS}</style>
     </>
@@ -919,6 +928,7 @@ address { font-style: normal; }
 .gold-btn { background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%); color: #fff; border-radius: 999px; padding: 13px 24px; font-size: 12px; font-weight: 400; letter-spacing: .16em; text-transform: uppercase; box-shadow: 0 8px 24px rgba(184,146,46,.3); transition: transform .25s, box-shadow .25s; }
 .gold-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(184,146,46,.4); }
 .gold-btn.small { justify-self: end; padding: 11px 22px; font-size: 11px; }
+.floating-booking-btn { display: none; }
 
 /* CTA FILLED — bottone principale piatti */
 .cta-filled { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #fff; border-radius: 999px; padding: 12px 28px; font-size: 13px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; box-shadow: 0 8px 24px rgba(184,146,46,.3); transition: transform .25s, box-shadow .25s; }
@@ -1116,6 +1126,8 @@ address { font-style: normal; }
   body { background: #1e3c3d; font-size: 16px; }
   main { background: var(--cream); width: min(100%, 430px); margin: 0 auto; padding-bottom: 82px; }
   .desktop-header { display: none; }
+  .floating-booking-btn { position: fixed; top: 14px; right: max(14px, calc((100vw - 430px) / 2 + 14px)); z-index: 95; display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 10px 17px; border: 1px solid rgba(255,255,255,.58); border-radius: 999px; background: rgba(255,250,240,.9); color: var(--deep); font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; box-shadow: 0 8px 28px rgba(5,37,29,.16); backdrop-filter: blur(18px) saturate(1.35); transition: transform .2s, background .2s, color .2s; }
+  .floating-booking-btn:hover { transform: translateY(-1px); background: rgba(184,146,46,.94); color: #fff; }
 
   /* Nav mobile */
   .mobile-nav { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 90; width: min(390px, calc(100% - 16px)); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px 10px; border-radius: 20px; background: rgba(255,252,245,.97); backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 4px 24px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.8); }
