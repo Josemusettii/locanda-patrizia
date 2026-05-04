@@ -4,8 +4,7 @@
  * OTTIMIZZAZIONI SEO + PERFORMANCE (visivamente identico)
  * ────────────────────────────────────────────────────────
  * LCP / Performance:
- *  • HeroImage: usa <link rel="preload"> iniettato in <head> per l'immagine
- *    corretta PRIMA che React idri — elimina il "Rilevamento della richiesta LCP"
+ *  • HeroImage: usa preload statici in index.html per scoprire prima la LCP
  *  • fetchpriority="high" sull'img hero
  *  • Tutte le immagini non-LCP hanno loading="lazy" + decoding="async"
  *  • Rimosso il doppio rendering mobile/desktop via CSS display:none
@@ -101,23 +100,6 @@ const menuData = {
     { name: "Polpo in doppia cottura su purea di patate al limone, petali di cipolla croccante e la sua maionese", price: 22 },
   ],
 };
-
-// ─── PRELOAD HERO — inietta <link rel="preload"> PRIMA che React idri ─────────
-// Risolve "Rilevamento della richiesta LCP" e migliora FCP/LCP score
-function injectHeroPreload() {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
-  const href = isMobile ? "/hero-mobile.webp" : "/hero-desktop.webp";
-  // Evita duplicati
-  if (document.querySelector(`link[rel="preload"][href="${href}"]`)) return;
-  const link = document.createElement("link");
-  link.rel = "preload";
-  link.as = "image";
-  link.href = href;
-  link.setAttribute("fetchpriority", "high");
-  document.head.prepend(link); // prepend = prima di qualunque altra risorsa
-}
-// Eseguito subito, prima di qualsiasi render
-if (typeof window !== "undefined") injectHeroPreload();
 
 // ─── SEO HEAD ─────────────────────────────────────────────────────────────────
 function SEOHead({ page }: { page: string }) {
@@ -338,10 +320,9 @@ function HeroImage() {
       className="hero-img"
       src={isMobile ? publicImg("hero-mobile.webp") : publicImg("hero-desktop.webp")}
       alt="La sala della Locanda Patrizia, ristorante nel centro storico di Carrara con cucina toscana"
-      width={isMobile ? 760 : 1440}
-      height={isMobile ? 900 : 960}
-      // fetchpriority come attributo HTML non-standard (ignorato da TypeScript ma letto dal browser)
-      {...({ fetchpriority: "high" } as any)}
+      width={isMobile ? 1024 : 1672}
+      height={isMobile ? 1535 : 941}
+      fetchPriority="high"
       decoding="async"
       loading="eager"
       style={{ objectPosition: isMobile ? "50% 50%" : "52% 58%" }}
@@ -955,7 +936,6 @@ export default function App() {
 
 // ─── CSS (identico all'originale) ─────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --green:      #0a3f30;
