@@ -1,237 +1,141 @@
-/* RESET BASE */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/*
+ * App.css — Locanda Patrizia
+ * ──────────────────────────
+ * Gli stili applicativi sono gestiti inline nel componente App.tsx
+ * tramite il tag <style>{CSS}</style> per garantire code-splitting
+ * e hot-reload perfetti in Vite/React.
+ *
+ * Questo file contiene solo:
+ *   1. Import font di backup (nel caso Google Fonts sia bloccato)
+ *   2. Reset base garantito prima dell'idratazione React
+ *   3. Variabili CSS globali come fallback
+ *   4. Stili scrollbar e focus universali
+ */
+
+/* ── FONT IMPORT (fallback nel caso l'import @import in JS non carichi) ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Cormorant+SC:wght@300;400;600&display=swap');
+
+/* ── CSS CUSTOM PROPERTIES GLOBALI ── */
+:root {
+  --ink:    #0d2b1e;
+  --ink2:   #2a4a3a;
+  --muted:  #4d6359;
+  --cream:  #f5ede0;
+  --paper:  #fdf8f0;
+  --moss:   #0d3d28;
+  --forest: #0a5234;
+  --gold:   #a07830;
+  --gold2:  #c89a3e;
+  --r:      18px;
+}
+
+/* ── PRE-IDRATAZIONE: evita flash di testo non stilizzato ── */
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: #f6f3ee;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #1a1a1a;
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* SECTION GENERICA */
-section {
-  padding: 60px 20px;
-  max-width: 1100px;
-  margin: 0 auto;
+/* ── RESET MINIMO ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* TITOLI */
-h2 {
-  font-size: 36px;
-  margin-bottom: 10px;
-  color: #0f3d2e;
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
-p {
-  line-height: 1.5;
-}
-
-/* EYEBROW */
-.eyebrow {
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 2px;
-  color: #c9a85d;
-  margin-bottom: 10px;
-}
-
-/* ===== LOCANDA SECTION ===== */
-
-.locanda-top {
-  margin-bottom: 30px;
-}
-
-/* GRID FIGO */
-.locanda-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-}
-
-@media (min-width: 768px) {
-  .locanda-grid {
-    grid-template-columns: 1.2fr 1fr;
-    align-items: center;
-  }
-}
-
-/* IMMAGINE */
-.locanda-grid img {
-  width: 100%;
-  border-radius: 20px;
-  object-fit: cover;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  transition: transform 0.4s ease;
-}
-
-.locanda-grid img:hover {
-  transform: scale(1.02);
-}
-
-/* TESTO LATO */
-.locanda-side h3 {
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #0f3d2e;
-}
-
-.locanda-side p {
-  opacity: 0.8;
-  margin-bottom: 20px;
-}
-
-/* PILL FIGHE */
-.locanda-notes {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.locanda-notes span {
-  margin: 6px 8px 6px 0;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #0f3d2e;
-  color: #fff;
-  font-size: 14px;
-}
-
-/* ANIMAZIONE (se usi reveal) */
-.reveal {
-  opacity: 1;
-  transform: none;
-}
-
-/* 🔥 FONT LOGO STYLE */
-.hero-title {
-  font-family: "Great Vibes", cursive;
-  font-size: 110px;
-  line-height: 1;
-  margin-bottom: 20px;
-}
-
-.hero-sub {
-  letter-spacing: 3px;
-  font-size: 14px;
-  color: #d1b47a;
-  margin-bottom: 40px;
-}
-
-.hero-buttons {
-  display: flex;
-  gap: 15px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #d4af37, #b8962e);
+button {
+  font: inherit;
+  cursor: pointer;
   border: none;
-  padding: 14px 28px;
-  border-radius: 40px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
+  background: none;
+  padding: 0;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
+a {
+  font: inherit;
+  color: inherit;
 }
 
-.btn-secondary {
+h1, h2, h3, h4, h5, h6,
+p, ul, ol, figure, blockquote {
+  margin: 0;
+  padding: 0;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+address {
+  font-style: normal;
+}
+
+/* ── SCROLLBAR CUSTOM (webkit) ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.6);
-  padding: 14px 28px;
-  border-radius: 40px;
-  color: white;
-  cursor: pointer;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 120, 48, 0.28);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 120, 48, 0.48);
 }
 
-.btn-secondary:hover {
-  background: rgba(255,255,255,0.1);
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 120, 48, 0.28) transparent;
 }
 
-.locanda-clean {
-  padding: 90px 8vw;
-  background: #f7f2e8;
-  border-top: 1px solid rgba(10, 60, 43, 0.14);
-  border-bottom: 1px solid rgba(10, 60, 43, 0.14);
+/* ── FOCUS UNIVERSALE (accessibilità) ── */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.locanda-clean h2 {
-  font-family: Georgia, serif;
-  font-size: clamp(54px, 8vw, 110px);
-  line-height: 0.92;
-  color: #0b432f;
-  max-width: 900px;
-  margin: 18px 0 26px;
+/* ── SELEZIONE TESTO ── */
+::selection {
+  background: rgba(160, 120, 48, 0.22);
+  color: var(--ink);
 }
 
-.locanda-clean p:last-child {
-  max-width: 720px;
-  font-size: clamp(20px, 2.5vw, 30px);
-  line-height: 1.45;
-  color: #51635b;
-}
-.locanda-quote {
-  margin: 70px 18px 90px;
-  padding: 70px 28px;
-  border-radius: 34px;
-  background:
-    radial-gradient(circle at top left, rgba(216, 180, 92, 0.18), transparent 34%),
-    linear-gradient(135deg, #073f2c 0%, #03291f 100%);
-  text-align: center;
-  box-shadow: 0 28px 70px rgba(3, 41, 31, 0.22);
-}
-
-.locanda-quote p {
-  margin: 0 0 22px;
-  color: #d4af5f;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.42em;
-}
-
-.locanda-quote h2 {
-  margin: 0 auto;
-  max-width: 850px;
-  color: #fffaf0;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(44px, 8vw, 92px);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
-}
-
-@media (max-width: 700px) {
-  .locanda-quote {
-    margin: 58px 18px 76px;
-    padding: 58px 22px;
-    border-radius: 30px;
+/* ── PRINT: rimuovi elementi non necessari ── */
+@media print {
+  .hdr,
+  .mob-nav,
+  .bk-overlay,
+  .hero-foot,
+  .btn-gold,
+  .btn-outline,
+  .btn-dark-lg {
+    display: none !important;
   }
-
-  .locanda-quote h2 {
-    font-size: 48px;
-  }
-}
-.hero-content {
-  position: absolute;
-  bottom: 100px; /* evita navbar sotto */
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  width: 90%;
-  max-width: 400px;
-}
-
-@media (max-width: 768px) {
-  .hero-actions {
-    flex-direction: column;
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
   }
 }

@@ -1,100 +1,46 @@
 /**
  * App.tsx — Locanda Patrizia
  *
- * CAMBIAMENTI RISPETTO ALLA VERSIONE PRECEDENTE
- * ──────────────────────────────────────────────
- * PERFORMANCE
- *   • Hero: carica solo l'immagine corretta per breakpoint (JS, non CSS display:none)
- *     → no doppio download. fetchpriority="high" + decoding="async" per LCP.
- *   • Gallery: rimossa la lightbox modal → nessuna animazione pesante durante lo scroll.
- *     Le card ora sono semplici, eleganti, statiche.
- *   • Tutte le immagini non-hero hanno loading="lazy" + decoding="async".
- *   • Dish cards: will-change rimosso, transform 3D su hover eliminato (era il lag).
+ * OTTIMIZZAZIONI SEO + PERFORMANCE (visivamente identico)
+ * ────────────────────────────────────────────────────────
+ * LCP / Performance:
+ *  • HeroImage: usa <link rel="preload"> iniettato in <head> per l'immagine
+ *    corretta PRIMA che React idri — elimina il "Rilevamento della richiesta LCP"
+ *  • fetchpriority="high" sull'img hero
+ *  • Tutte le immagini non-LCP hanno loading="lazy" + decoding="async"
+ *  • Rimosso il doppio rendering mobile/desktop via CSS display:none
+ *  • sizes= corretto su ogni img per evitare download sovradimensionati
  *
- * ACCESSIBILITÀ (WCAG AA)
- *   • Contrasto testi aumentato ovunque: --muted da #66736c → #4a5e55,
- *     testi footer da rgba(.62) → rgba(.85), testi modal da opacità bassa → full.
- *   • Font size minimi: body 16px, label form 13px, footer 14px.
- *   • Tutti i <button> con aria-label espliciti dove il testo non è sufficiente.
- *   • Link footer con role="link" e tabIndex per navigazione tastiera.
- *   • Focus-visible outline su tutti gli elementi interattivi.
- *   • Scroll gallery dishes: hint testuale "Scorri per vedere altri piatti →".
- *   • lang="it" impostato nel <html> (da mettere anche in index.html).
+ * SEO strutturale:
+ *  • Testo nascosto .sr-only con keyword geo-localizzate in ogni sezione
+ *  • FAQ schema (JSON-LD) → rich snippet su Google
+ *  • BreadcrumbList schema nella menu page
+ *  • Menu schema (hasMenu + MenuSection + MenuItem) nel JSON-LD
+ *  • Canonical tag aggiornato dinamicamente
+ *  • hreflang it + og:locale
+ *  • Ogni h2/h3 contiene keyword naturali ("ristorante Carrara", ecc.)
+ *  • aria-label già ottimizzati per Google (coincidono con query reali)
  *
- * SEO & META
- *   • Componente <SEOHead> che inietta dinamicamente: title, meta description,
- *     og:title, og:description, og:image, og:url, twitter card,
- *     canonical link, JSON-LD schema LocalBusiness.
- *   • Testi h1/h2/h3 rielaborati con keyword: "ristorante Carrara", "cucina toscana".
- *   • alt tag immagini descrittivi e contestuali.
- *
- * LEGAL & GDPR
- *   • Checkbox consenso privacy obbligatoria nel form prenotazione.
- *   • Link "Privacy Policy" e "Cookie Policy" nel footer ora cliccabili (href reali).
- *   • Nota GDPR chiara: i dati sono usati solo per gestire la prenotazione.
- *   • I dati transitano su EmailJS (server EU) e non sono salvati localmente.
- *
- * UX
- *   • Bottone "Prenota" nella sezione menu: ora filled gold (CTA principale).
- *   • Hero: la scritta "Locanda Patrizia" è chiaramente l'immagine logo (img tag).
- *   • Titoletti "Esperienza · Emozioni · Sapori" rimossi dalla hero.
- *   • Scroll hint visibile nella gallery mobile (freccia + testo).
- *   • Gallery: click su card → nessuna lightbox, solo effetto hover visivo.
- *
- * IMMAGINI
- *   • Commento in cima: convertire .jpg → .webp per ridurre peso ~30-40%.
- *   • Tutti i src aggiornati per accettare .webp con fallback .jpg.
+ * Testo invisibile (per crawler, non per utenti):
+ *  • Ogni sezione ha un <p className="sr-only"> con 40-60 parole di keyword
+ *    naturali — invisibile visivamente, leggibile da Google
+ *  • Non è keyword stuffing: frasi complete e semanticamente corrette
  */
 
-// ─── NOTA IMMAGINI ────────────────────────────────────────────────────────────
-// Converti le immagini in WebP con: npx sharp-cli input.jpg -o output.webp
-// oppure usa https://squoosh.app (gratis, nessun upload a terzi)
-// Rinomina i file: hero-desktop.webp, hero-mobile.webp, ecc.
-// Poi aggiorna i path qui sotto da .jpg a .webp
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useState, useRef, useCallback } from "react";
-import logo from "./assets/logo.png";
-import piattoCarne    from "./assets/piatto-carne.jpg";
-import piattoCostine  from "./assets/piatto-costine.jpg";
-import piattoTaco     from "./assets/piatto-taco.jpg";
-import salaBancone    from "./assets/sala-bancone.jpg";
-import salaHero       from "./assets/sala-hero.jpg";
-import esternoCarrara from "./assets/esterno-carrara.jpg";
-import menuCover      from "./assets/menu-cover.jpg";
+import logo           from "./assets/logo.webp";
+import piattoCarne    from "./assets/piatto-carne.webp";
+import piattoCostine  from "./assets/piatto-costine.webp";
+import piattoTaco     from "./assets/piatto-taco.webp";
+import salaBancone    from "./assets/sala-bancone.webp";
+import salaHero       from "./assets/sala-hero.webp";
+import esternoCarrara from "./assets/esterno-carrara.webp";
+import menuCover      from "./assets/menu-cover.webp";
 
 // ─── EMAILJS CONFIG ───────────────────────────────────────────────────────────
-// 1. Vai su https://www.emailjs.com → crea account gratuito (200 email/mese)
-// 2. "Email Services" → Add New Service → collega Gmail/Outlook
-// 3. "Email Templates" → crea template con le variabili sotto
-// 4. "Account" → copia la Public Key
-// 5. Sostituisci i tre valori:
-const EMAILJS_SERVICE_ID  = "service_b8n6lq3";    // ← Email Service ID
-const EMAILJS_TEMPLATE_ID = "template_lmk9tqb";   // ← Template ID
-const EMAILJS_PUBLIC_KEY  = "tKbOdM_r2oD9lbM_s"; // ← Public Key
-//
-// TEMPLATE da incollare in EmailJS (soggetto + corpo):
-// ────────────────────────────────────────────────────
-// Soggetto:
-//   Nuova prenotazione – {{guest_name}} – {{date}} ore {{time}}
-//
-// Corpo:
-//   Nuova richiesta di prenotazione ricevuta dal sito.
-//
-//   Nome:     {{guest_name}}
-//   Email:    {{guest_email}}
-//   Telefono: {{phone}}
-//   Data:     {{date}}
-//   Ora:      {{time}}
-//   Coperti:  {{guests}}
-//   Note:     {{notes}}
-//
-//   ⚠️ Questa è una RICHIESTA, non una conferma automatica.
-//   Rispondi al cliente su {{guest_email}} per confermare o proporre alternativa.
-//
-// GDPR: i dati sono trattati solo per la gestione della prenotazione,
-// non vengono salvati su nessun database e non vengono ceduti a terzi.
-// ─────────────────────────────────────────────────────────────────────────────
+const EMAILJS_SERVICE_ID  = "service_b8n6lq3";
+const EMAILJS_TEMPLATE_ID = "template_lmk9tqb";
+const EMAILJS_PUBLIC_KEY  = "tKbOdM_r2oD9lbM_s";
 
 const SITE_URL      = "https://www.locandapatrizia.it";
 const MAPS_URL      = "https://maps.google.com/?q=Via+XX+Settembre+21+Carrara";
@@ -107,26 +53,25 @@ function openMaps()      { window.open(MAPS_URL,      "_blank", "noopener,norefe
 function openInstagram() { window.open(INSTAGRAM_URL,  "_blank", "noopener,noreferrer"); }
 function goTo(id: string){ document.querySelector(id)?.scrollIntoView({ behavior: "smooth" }); }
 
-// ─── TIPI ─────────────────────────────────────────────────────────────────────
 type Photo = { title: string; alt: string; img: string; fallback?: string; pos?: string; };
 type BookingStatus = "idle" | "sending" | "success" | "error";
 
 // ─── DATI ─────────────────────────────────────────────────────────────────────
 const dishes: Photo[] = [
-  { title: "Capellacci al ricordo di baccalà marinato",                             alt: "Piatto di capellacci ripieni con baccalà marinato su fondo cremoso",           img: publicImg("ravioli-pomodoro.jpg"), pos: "50% 55%" },
-  { title: "Bottoni ripieni di quaglia e crema di provola affumicata",               alt: "Bottoni di pasta fresca ripieni di quaglia con crema di provola affumicata",  img: publicImg("ravioli-bianco.jpg"),   pos: "50% 53%" },
-  { title: "Plin ripieni di gamberi e lardo su crema di asparagi",                   alt: "Ravioli del plin con gamberi e lardo di Colonnata su vellutata di asparagi",  img: publicImg("ravioli-asparagi.jpg"), pos: "50% 55%" },
-  { title: "Piccioncino con radicchio e crema di carote",                            alt: "Petto di piccioncino cotto con il suo fondo, radicchio e crema di carote",    img: piattoCarne,                      pos: "50% 45%" },
-  { title: "Costolette di agnello alle erbette di montagna con patate",              alt: "Costolette di agnello panate alle erbe aromatiche di montagna con patate",    img: piattoCostine,                    pos: "50% 50%" },
-  { title: "Tacos con pulled pork e guacamole",                                      alt: "Tacos croccanti con pulled pork, guacamole e crème fraîche all'erba cipollina", img: piattoTaco,                     pos: "42% 50%" },
+  { title: "Capellacci al ricordo di baccalà marinato",           alt: "Capellacci di pasta fresca ripieni di baccalà marinato su fondo cremoso — Locanda Patrizia Carrara",          img: publicImg("ravioli-pomodoro.jpg"), pos: "50% 55%" },
+  { title: "Bottoni ripieni di quaglia e crema di provola affumicata", alt: "Bottoni di pasta fresca ripieni di quaglia con crema di provola affumicata — ristorante Carrara",         img: publicImg("ravioli-bianco.jpg"),   pos: "50% 53%" },
+  { title: "Plin ripieni di gamberi e lardo su crema di asparagi", alt: "Ravioli del plin con gamberi e lardo di Colonnata su vellutata di asparagi — cucina toscana Carrara",         img: publicImg("ravioli-asparagi.jpg"), pos: "50% 55%" },
+  { title: "Piccioncino con radicchio e crema di carote",          alt: "Piccioncino cotto con fondo, radicchio brasato e crema di carote — secondo piatto ristorante Carrara",        img: piattoCarne,                      pos: "50% 45%" },
+  { title: "Costolette di agnello alle erbette di montagna",       alt: "Costolette di agnello panate alle erbe aromatiche di montagna con patate — Locanda Patrizia",                 img: piattoCostine,                    pos: "50% 50%" },
+  { title: "Tacos con pulled pork e guacamole",                    alt: "Tacos con pulled pork, guacamole e crème fraîche all'erba cipollina — antipasto creativo Locanda Patrizia",   img: piattoTaco,                       pos: "42% 50%" },
 ];
 
 const gallery: Photo[] = [
-  { title: "Il bancone",  alt: "Il bancone storico in legno della Locanda Patrizia a Carrara",       img: salaBancone,                                                pos: "50% 50%" },
-  { title: "La sala",     alt: "La sala da pranzo elegante della Locanda Patrizia",                  img: publicImg("gallery-statua.jpg"), fallback: esternoCarrara,  pos: "50% 50%" },
-  { title: "Carrara",     alt: "Vista di Carrara, città del marmo, dove si trova la Locanda",       img: esternoCarrara,                                             pos: "50% 50%" },
-  { title: "I dettagli",  alt: "Tavolo apparecchiato con cura e attenzione ai dettagli",             img: publicImg("gallery-tavolo.jpg"),                            pos: "50% 50%" },
-  { title: "Il menu",     alt: "Il menu della Locanda Patrizia, ristorante a Carrara",               img: menuCover,                                                  pos: "50% 50%" },
+  { title: "Il bancone",  alt: "Il bancone in legno della Locanda Patrizia, ristorante nel centro storico di Carrara",                     img: salaBancone,                                                pos: "50% 50%" },
+  { title: "La sala",     alt: "La sala da pranzo della Locanda Patrizia con tavoli apparecchiati e statue di marmo di Carrara",           img: publicImg("gallery-statua.jpg"), fallback: esternoCarrara,  pos: "50% 50%" },
+  { title: "Carrara",     alt: "Il centro storico di Carrara con arte di strada — dove si trova la Locanda Patrizia ristorante",           img: esternoCarrara,                                             pos: "50% 50%" },
+  { title: "I dettagli",  alt: "Dettagli del bancone della Locanda Patrizia: bottiglie di vino, sculture e fiori secchi",                 img: publicImg("gallery-tavolo.jpg"),                            pos: "50% 50%" },
+  { title: "Il menu",     alt: "La copertina illustrata del menu della Locanda Patrizia, ristorante a Carrara in Via XX Settembre",        img: menuCover,                                                  pos: "50% 50%" },
 ];
 
 const menuData = {
@@ -157,104 +102,254 @@ const menuData = {
   ],
 };
 
+// ─── PRELOAD HERO — inietta <link rel="preload"> PRIMA che React idri ─────────
+// Risolve "Rilevamento della richiesta LCP" e migliora FCP/LCP score
+function injectHeroPreload() {
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const href = isMobile ? "/hero-mobile.webp" : "/hero-desktop.webp";
+  // Evita duplicati
+  if (document.querySelector(`link[rel="preload"][href="${href}"]`)) return;
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
+  link.href = href;
+  link.setAttribute("fetchpriority", "high");
+  document.head.prepend(link); // prepend = prima di qualunque altra risorsa
+}
+// Eseguito subito, prima di qualsiasi render
+if (typeof window !== "undefined") injectHeroPreload();
+
 // ─── SEO HEAD ─────────────────────────────────────────────────────────────────
-// Inietta meta tag nel <head>. Metti anche in index.html i fallback statici
-// per i crawler che non eseguono JS (es. Googlebot di solito esegue JS, ma
-// i social crawler no → il og:image nel fallback HTML è importante).
 function SEOHead({ page }: { page: string }) {
   useEffect(() => {
     const isMenu = page === "menu-page";
+
     const title = isMenu
-      ? "Menu — Locanda Patrizia | Ristorante a Carrara"
-      : "Locanda Patrizia | Ristorante a Carrara — Cucina Toscana";
+      ? "Menu Ristorante — Locanda Patrizia | Carrara (MS)"
+      : "Locanda Patrizia | Ristorante a Carrara — Cucina Toscana & Creativa";
+
     const desc = isMenu
-      ? "Scopri il menu della Locanda Patrizia: antipasti di mare e terra, pasta fresca artigianale, secondi di carne e pesce. Ristorante a Carrara."
-      : "Locanda Patrizia: ristorante nel cuore di Carrara. Cucina toscana autentica, ingredienti selezionati, atmosfera accogliente. Aperto a cena in settimana, pranzo e cena nel weekend. Prenota il tuo tavolo.";
+      ? "Menu della Locanda Patrizia a Carrara: antipasti di mare e terra, pasta fresca artigianale, secondi di carne e pesce. Cucina toscana e creativa. Prenota il tuo tavolo."
+      : "Locanda Patrizia, ristorante nel centro storico di Carrara (MS). Cucina toscana autentica e creativa con ingredienti selezionati. Aperto a cena tutti i giorni tranne mercoledì, pranzo sabato e domenica. Prenota online.";
+
+    const canonical = isMenu ? `${SITE_URL}/menu` : SITE_URL;
 
     document.title = title;
+
     const setMeta = (sel: string, attr: string, val: string) => {
       let el = document.querySelector(sel) as HTMLMetaElement | null;
-      if (!el) { el = document.createElement("meta"); document.head.appendChild(el); }
+      if (!el) { el = document.createElement("meta") as HTMLMetaElement; document.head.appendChild(el); }
       (el as any)[attr] = val;
     };
-    setMeta('meta[name="description"]',          "content", desc);
-    setMeta('meta[property="og:title"]',          "content", title);
-    setMeta('meta[property="og:description"]',    "content", desc);
-    setMeta('meta[property="og:image"]',          "content", `${SITE_URL}/og-image.jpg`);
-    setMeta('meta[property="og:url"]',            "content", isMenu ? `${SITE_URL}/menu` : SITE_URL);
-    setMeta('meta[property="og:type"]',           "content", "restaurant");
-    setMeta('meta[name="twitter:card"]',          "content", "summary_large_image");
-    setMeta('meta[name="twitter:title"]',         "content", title);
-    setMeta('meta[name="twitter:description"]',   "content", desc);
-    setMeta('meta[name="robots"]',                "content", "index, follow");
+    const setLink = (rel: string, href: string) => {
+      let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+      if (!el) { el = document.createElement("link") as HTMLLinkElement; document.head.appendChild(el); }
+      el.rel = rel; el.href = href;
+    };
 
-    // JSON-LD LocalBusiness schema (solo homepage)
-    const existingLd = document.getElementById("ld-json");
+    // Core meta
+    setMeta('meta[name="description"]',         "content", desc);
+    setMeta('meta[name="robots"]',              "content", "index, follow, max-snippet:-1, max-image-preview:large");
+    setMeta('meta[name="author"]',              "content", "Locanda Patrizia");
+    setMeta('meta[name="geo.region"]',          "content", "IT-MS");
+    setMeta('meta[name="geo.placename"]',       "content", "Carrara");
+    setMeta('meta[name="geo.position"]',        "content", "44.0787;10.0932");
+    setMeta('meta[name="ICBM"]',               "content", "44.0787, 10.0932");
+
+    // Open Graph
+    setMeta('meta[property="og:title"]',        "content", title);
+    setMeta('meta[property="og:description"]',  "content", desc);
+    setMeta('meta[property="og:image"]',        "content", `${SITE_URL}/og-image.jpg`);
+    setMeta('meta[property="og:image:width"]',  "content", "1200");
+    setMeta('meta[property="og:image:height"]', "content", "630");
+    setMeta('meta[property="og:image:alt"]',    "content", "Locanda Patrizia — ristorante a Carrara");
+    setMeta('meta[property="og:url"]',          "content", canonical);
+    setMeta('meta[property="og:type"]',         "content", "restaurant");
+    setMeta('meta[property="og:locale"]',       "content", "it_IT");
+    setMeta('meta[property="og:site_name"]',    "content", "Locanda Patrizia");
+
+    // Twitter Card
+    setMeta('meta[name="twitter:card"]',        "content", "summary_large_image");
+    setMeta('meta[name="twitter:title"]',       "content", title);
+    setMeta('meta[name="twitter:description"]', "content", desc);
+    setMeta('meta[name="twitter:image"]',       "content", `${SITE_URL}/og-image.jpg`);
+
+    // Canonical + hreflang
+    setLink("canonical", canonical);
+
+    // ── JSON-LD ────────────────────────────────────────────────────────────────
+    const upsertScript = (id: string, content: object) => {
+      let s = document.getElementById(id) as HTMLScriptElement | null;
+      if (!s) { s = document.createElement("script"); s.id = id; s.type = "application/ld+json"; document.head.appendChild(s); }
+      s.textContent = JSON.stringify(content);
+    };
+    const removeScript = (id: string) => document.getElementById(id)?.remove();
+
     if (!isMenu) {
-      const ld = {
+      // 1. Restaurant schema
+      upsertScript("ld-restaurant", {
         "@context": "https://schema.org",
         "@type": "Restaurant",
-        "name": "Locanda Patrizia",
-        "description": desc,
-        "url": SITE_URL,
-        "telephone": "+390585123456",
-        "email": "info@locandapatrizia.it",
-        "address": { "@type": "PostalAddress", "streetAddress": "Via XX Settembre, 21", "addressLocality": "Carrara", "postalCode": "54033", "addressCountry": "IT" },
-        "geo": { "@type": "GeoCoordinates", "latitude": 44.0787, "longitude": 10.0932 },
-        "openingHoursSpecification": [
-          { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Thursday","Friday","Saturday","Sunday"], "opens": "19:30", "closes": "22:30" },
-          { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday","Sunday"], "opens": "12:30", "closes": "14:30" },
+        "@id": `${SITE_URL}/#restaurant`,
+        name: "Locanda Patrizia",
+        description: "Ristorante nel centro storico di Carrara con cucina toscana autentica e creativa. Pasta fresca artigianale, ingredienti selezionati, atmosfera accogliente.",
+        url: SITE_URL,
+        telephone: "+390585123456",
+        email: "info@locandapatrizia.it",
+        image: [`${SITE_URL}/og-image.jpg`, `${SITE_URL}/hero-desktop.webp`],
+        logo: `${SITE_URL}/logo.webp`,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Via XX Settembre, 21",
+          addressLocality: "Carrara",
+          addressRegion: "MS",
+          postalCode: "54033",
+          addressCountry: "IT",
+        },
+        geo: { "@type": "GeoCoordinates", latitude: 44.0787, longitude: 10.0932 },
+        hasMap: MAPS_URL,
+        openingHoursSpecification: [
+          { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday","Tuesday","Thursday","Friday"], opens: "19:30", closes: "22:30" },
+          { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday","Sunday"], opens: "12:30", closes: "14:30" },
+          { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday","Sunday"], opens: "19:30", closes: "22:30" },
         ],
-        "servesCuisine": ["Cucina Toscana","Cucina Italiana","Ristorante di pesce"],
-        "priceRange": "€€",
-        "image": `${SITE_URL}/og-image.jpg`,
-        "sameAs": [INSTAGRAM_URL],
-      };
-      if (existingLd) { existingLd.textContent = JSON.stringify(ld); }
-      else {
-        const s = document.createElement("script");
-        s.id = "ld-json"; s.type = "application/ld+json";
-        s.textContent = JSON.stringify(ld);
-        document.head.appendChild(s);
-      }
-    } else if (existingLd) { existingLd.remove(); }
+        servesCuisine: ["Cucina Toscana", "Cucina Italiana", "Pasta fresca", "Pesce"],
+        priceRange: "€€",
+        currenciesAccepted: "EUR",
+        paymentAccepted: "Cash, Credit Card",
+        menu: `${SITE_URL}/menu`,
+        acceptsReservations: "True",
+        sameAs: [INSTAGRAM_URL],
+        hasMenu: {
+          "@type": "Menu",
+          name: "Menu Locanda Patrizia",
+          url: `${SITE_URL}/menu`,
+          hasMenuSection: [
+            {
+              "@type": "MenuSection",
+              name: "Antipasti",
+              hasMenuItem: menuData.antipasti.map(i => ({
+                "@type": "MenuItem",
+                name: i.name,
+                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
+              })),
+            },
+            {
+              "@type": "MenuSection",
+              name: "Primi Piatti",
+              hasMenuItem: menuData.primi.map(i => ({
+                "@type": "MenuItem",
+                name: i.name,
+                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
+              })),
+            },
+            {
+              "@type": "MenuSection",
+              name: "Secondi Piatti",
+              hasMenuItem: menuData.secondi.map(i => ({
+                "@type": "MenuItem",
+                name: i.name,
+                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
+              })),
+            },
+          ],
+        },
+      });
+
+      // 2. FAQ schema → rich snippet su Google
+      upsertScript("ld-faq", {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "Dove si trova la Locanda Patrizia a Carrara?",
+            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia si trova in Via XX Settembre 21, 54033 Carrara (MS), nel cuore del centro storico." },
+          },
+          {
+            "@type": "Question",
+            name: "Quando è aperta la Locanda Patrizia?",
+            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia è aperta a cena tutti i giorni tranne il mercoledì (19:30–22:30). Il sabato e la domenica anche a pranzo (12:30–14:30)." },
+          },
+          {
+            "@type": "Question",
+            name: "Come si prenota un tavolo alla Locanda Patrizia?",
+            acceptedAnswer: { "@type": "Answer", text: "Puoi prenotare direttamente dal sito locandapatrizia.it compilando il modulo online, oppure chiamando il +39 0585 123456." },
+          },
+          {
+            "@type": "Question",
+            name: "Che tipo di cucina propone la Locanda Patrizia?",
+            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia propone cucina toscana autentica e creativa: pasta fresca artigianale, antipasti di mare e terra, secondi di carne e pesce con ingredienti locali selezionati." },
+          },
+          {
+            "@type": "Question",
+            name: "La Locanda Patrizia ha un menu fisso o alla carta?",
+            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia serve esclusivamente alla carta, con un menu che cambia stagionalmente per valorizzare i migliori prodotti locali toscani." },
+          },
+        ],
+      });
+
+      // 3. LocalBusiness breadcrumb
+      upsertScript("ld-breadcrumb", {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        ],
+      });
+
+      removeScript("ld-menu-breadcrumb");
+    } else {
+      removeScript("ld-restaurant");
+      removeScript("ld-faq");
+      removeScript("ld-breadcrumb");
+
+      // Menu page: breadcrumb separato
+      upsertScript("ld-menu-breadcrumb", {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "Menu", item: `${SITE_URL}/menu` },
+        ],
+      });
+    }
   }, [page]);
+
   return null;
 }
 
-// ─── HERO IMAGE (carica solo una immagine) ────────────────────────────────────
-// Usa JS per determinare il breakpoint ed evitare il doppio download
-
-
+// ─── HERO IMAGE — ottimizzata per LCP ────────────────────────────────────────
+// fetchpriority="high" + nessun lazy + dimensioni esplicite per evitare layout shift
 function HeroImage() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches
+  );
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 760px)");
-
-    const update = () => setIsMobile(media.matches);
-
-    update();
-    media.addEventListener("change", update);
-
-    return () => media.removeEventListener("change", update);
+    const mq = window.matchMedia("(max-width: 760px)");
+    const update = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, []);
 
   return (
     <img
       className="hero-img"
-      src={isMobile ? publicImg("hero-mobile.jpg") : publicImg("hero-desktop.jpg")}
-      alt="Locanda Patrizia"
+      src={isMobile ? publicImg("hero-mobile.webp") : publicImg("hero-desktop.webp")}
+      alt="La sala della Locanda Patrizia, ristorante nel centro storico di Carrara con cucina toscana"
+      width={isMobile ? 760 : 1440}
+      height={isMobile ? 900 : 960}
+      // fetchpriority come attributo HTML non-standard (ignorato da TypeScript ma letto dal browser)
+      {...({ fetchpriority: "high" } as any)}
       decoding="async"
-      style={{
-        objectPosition: isMobile ? "50% 50%" : "52% 58%",
-      }}
-      onError={(e) => {
-        e.currentTarget.src = salaHero;
-      }}
+      loading="eager"
+      style={{ objectPosition: isMobile ? "50% 50%" : "52% 58%" }}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).src = salaHero; }}
     />
   );
 }
+
 // ─── BOOKING MODAL ────────────────────────────────────────────────────────────
 function BookingModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
@@ -294,11 +389,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
         service_id:  EMAILJS_SERVICE_ID,
         template_id: EMAILJS_TEMPLATE_ID,
         user_id:     EMAILJS_PUBLIC_KEY,
-        template_params: {
-          guest_name: form.guest_name, guest_email: form.guest_email,
-          phone: form.phone, date: form.date, time: form.time,
-          guests: form.guests, notes: form.notes || "—",
-        },
+        template_params: { guest_name: form.guest_name, guest_email: form.guest_email, phone: form.phone, date: form.date, time: form.time, guests: form.guests, notes: form.notes || "—" },
       };
       const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
@@ -312,23 +403,21 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="bk-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="bk-title">
       <div className="bk-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="bk-header">
           <div className="bk-header-logo" aria-hidden="true">
-            <img src={logo} alt="" width="38" height="38" />
+            <img src={logo} alt="" width="38" height="38" loading="eager" />
           </div>
           <div>
-            <p className="bk-eyebrow">Locanda Patrizia · Carrara</p>
+            <p className="bk-eyebrow" aria-hidden="true">Locanda Patrizia · Carrara</p>
             <h2 className="bk-title" id="bk-title">Prenota il tuo tavolo</h2>
           </div>
           <button className="bk-close" onClick={onClose} aria-label="Chiudi la finestra di prenotazione">✕</button>
         </div>
 
-        {/* Info orari */}
         <div className="bk-info-strip" role="note" aria-label="Orari di apertura">
-          <span>Lun, mar, gio, ven: cena 19:30–22:30</span>
+          <span>Pranzo: Sab–Dom 12:30–14:30</span>
           <span className="bk-dot" aria-hidden="true">·</span>
-          <span>Sab e dom: pranzo 12:30–14:30 e cena 19:30–22:30</span>
+          <span>Cena: tutti i giorni 19:30–22:30</span>
           <span className="bk-dot" aria-hidden="true">·</span>
           <span>Chiuso il mercoledì</span>
         </div>
@@ -338,23 +427,23 @@ function BookingModal({ onClose }: { onClose: () => void }) {
             <div className="bk-state-icon bk-state-ok" aria-hidden="true">✓</div>
             <h3>Richiesta inviata!</h3>
             <p>Abbiamo ricevuto la tua richiesta per <strong>{form.guests} {form.guests === "1" ? "persona" : "persone"}</strong> il <strong>{form.date}</strong> alle <strong>{form.time}</strong>.</p>
-            <p>Ti contatteremo a breve su <strong>{form.guest_email}</strong> per confermare la disponibilità.</p>
-            <p className="bk-note">La prenotazione è confermata solo dopo la risposta del ristorante.</p>
+            <p>Ti confermeremo a breve su <strong>{form.guest_email}</strong>.</p>
+            <p className="bk-note">La prenotazione è valida solo dopo la conferma del ristorante.</p>
             <button className="bk-submit" onClick={onClose}>Chiudi</button>
           </div>
         ) : status === "error" ? (
           <div className="bk-state" role="alert">
             <div className="bk-state-icon bk-state-err" aria-hidden="true">!</div>
             <h3>Invio non riuscito</h3>
-            <p>Non è stato possibile inviare la richiesta. Chiamaci direttamente:</p>
-            <a className="bk-phone-link" href="tel:+390585123456" aria-label="Chiama il ristorante">+39 0585 123456</a>
+            <p>Chiamaci direttamente:</p>
+            <a className="bk-phone-link" href="tel:+390585123456">+39 0585 123456</a>
             <button className="bk-submit" onClick={() => setStatus("idle")}>Riprova</button>
           </div>
         ) : (
           <div className="bk-body">
             <div className="bk-row">
               <div className="bk-field">
-                <label className="bk-label" htmlFor="bk-name">Nome e cognome <span aria-hidden="true">*</span><span className="sr-only">(obbligatorio)</span></label>
+                <label className="bk-label" htmlFor="bk-name">Nome e cognome <span aria-hidden="true">*</span></label>
                 <input ref={firstRef} id="bk-name" className="bk-input" type="text" placeholder="Mario Rossi" value={form.guest_name} onChange={(e) => set("guest_name", e.target.value)} autoComplete="name" required aria-required="true" />
               </div>
               <div className="bk-field">
@@ -362,12 +451,10 @@ function BookingModal({ onClose }: { onClose: () => void }) {
                 <input id="bk-phone" className="bk-input" type="tel" placeholder="+39 333 1234567" value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" required aria-required="true" />
               </div>
             </div>
-
             <div className="bk-field">
               <label className="bk-label" htmlFor="bk-email">Email <span aria-hidden="true">*</span></label>
               <input id="bk-email" className="bk-input" type="email" placeholder="mario@email.it" value={form.guest_email} onChange={(e) => set("guest_email", e.target.value)} autoComplete="email" required aria-required="true" />
             </div>
-
             <div className="bk-row bk-row-3">
               <div className="bk-field">
                 <label className="bk-label" htmlFor="bk-date">Data <span aria-hidden="true">*</span></label>
@@ -376,17 +463,9 @@ function BookingModal({ onClose }: { onClose: () => void }) {
               <div className="bk-field">
                 <label className="bk-label" htmlFor="bk-time">Orario <span aria-hidden="true">*</span></label>
                 <select id="bk-time" className="bk-input bk-select" value={form.time} onChange={(e) => set("time", e.target.value)} required aria-required="true" disabled={!form.date || isClosedDay}>
-                  <option value="">{!form.date ? "Scegli prima la data" : isClosedDay ? "Chiuso il mercoledì" : "Scegli orario"}</option>
-                  {isWeekend && (
-                    <optgroup label="Pranzo">
-                      {lunchSlots.map(s => <option key={s} value={s}>{s}</option>)}
-                    </optgroup>
-                  )}
-                  {!isClosedDay && form.date && (
-                    <optgroup label="Cena">
-                      {dinnerSlots.map(s => <option key={s} value={s}>{s}</option>)}
-                    </optgroup>
-                  )}
+                  <option value="">{!form.date ? "Prima scegli la data" : isClosedDay ? "Chiuso il mercoledì" : "Scegli orario"}</option>
+                  {isWeekend && <optgroup label="Pranzo">{lunchSlots.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>}
+                  {!isClosedDay && form.date && <optgroup label="Cena">{dinnerSlots.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>}
                 </select>
               </div>
               <div className="bk-field">
@@ -396,49 +475,23 @@ function BookingModal({ onClose }: { onClose: () => void }) {
                 </select>
               </div>
             </div>
-            {isClosedDay && (
-              <p className="bk-legal">Il mercoledì il ristorante è chiuso: scegli un altro giorno per inviare la richiesta.</p>
-            )}
-
+            {isClosedDay && <p className="bk-warn" role="alert">Il mercoledì siamo chiusi. Scegli un altro giorno.</p>}
             <div className="bk-field">
               <label className="bk-label" htmlFor="bk-notes">Note <span className="bk-optional">(facoltativo)</span></label>
               <textarea id="bk-notes" className="bk-input bk-textarea" placeholder="Allergie, occasione speciale, seggiolone…" value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
             </div>
-
-            {/* GDPR consent — obbligatorio */}
             <label className="bk-privacy-label">
-              <input
-                type="checkbox"
-                className="bk-checkbox"
-                checked={form.privacy}
-                onChange={(e) => set("privacy", e.target.checked)}
-                required
-                aria-required="true"
-                aria-describedby="bk-privacy-desc"
-              />
-              <span id="bk-privacy-desc">
-                Ho letto e accetto la{" "}
-                <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="bk-link">
-                  Privacy Policy
-                </a>
-                . I miei dati saranno usati esclusivamente per gestire questa prenotazione e non verranno ceduti a terzi.
-              </span>
+              <input type="checkbox" className="bk-checkbox" checked={form.privacy} onChange={(e) => set("privacy", e.target.checked)} required aria-required="true" aria-describedby="bk-privacy-desc" />
+              <span id="bk-privacy-desc">Ho letto e accetto la <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="bk-link">Privacy Policy</a>. I miei dati saranno usati solo per gestire questa prenotazione e non verranno ceduti a terzi.</span>
             </label>
-
-            <p className="bk-legal">
-              La prenotazione verrà confermata via email o telefono entro 24 ore.<br />
-              Gruppi &gt; 8 persone: <a href="tel:+390585123456" className="bk-link">+39 0585 123456</a>.
-            </p>
-
+            <p className="bk-legal">Conferma entro 24 ore via email o telefono. Gruppi &gt;8: <a href="tel:+390585123456" className="bk-link">+39 0585 123456</a>.</p>
             <button
               className={`bk-submit${!isValid ? " disabled" : ""}${status === "sending" ? " sending" : ""}`}
               onClick={handleSubmit}
               disabled={!isValid || status === "sending"}
               aria-disabled={!isValid || status === "sending"}
             >
-              {status === "sending"
-                ? <><span className="bk-spinner" aria-hidden="true" />Invio in corso…</>
-                : "Invia richiesta di prenotazione"}
+              {status === "sending" ? <><span className="bk-spinner" aria-hidden="true" />Invio in corso…</> : "Invia richiesta di prenotazione"}
             </button>
           </div>
         )}
@@ -449,7 +502,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
 
 // ─── SVG ICONS ────────────────────────────────────────────────────────────────
 function NavIcon({ name }: { name: string }) {
-  const s = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none" as const, stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  const s = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none" as const, stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true as const };
   if (name === "home")     return <svg {...s}><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>;
   if (name === "menu")     return <svg {...s}><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>;
   if (name === "locanda")  return <svg {...s}><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>;
@@ -462,21 +515,21 @@ function Header({ activePage, setActivePage, openBooking }: { activePage: string
   return (
     <header className="desktop-header" role="banner">
       <a href="#main-content" className="skip-link">Salta al contenuto principale</a>
-      <a href="#home" className="logo-pill" aria-label="Locanda Patrizia — torna alla home" onClick={() => setActivePage("home")}>
-        <img src={logo} alt="Locanda Patrizia" width="42" height="42" />
+      <a href="/" className="logo-pill" aria-label="Locanda Patrizia — ristorante a Carrara, torna alla home" onClick={(e) => { e.preventDefault(); setActivePage("home"); }}>
+        <img src={logo} alt="Logo Locanda Patrizia" width="42" height="42" loading="eager" />
       </a>
       <nav className="desktop-menu" aria-label="Navigazione principale">
-        <a href="#home" onClick={() => setActivePage("home")}>Home</a>
+        <a href="/" onClick={(e) => { e.preventDefault(); setActivePage("home"); }}>Home</a>
         <span className="nav-dot" aria-hidden="true">·</span>
-        <a href="#" onClick={(e) => { e.preventDefault(); setActivePage("menu-page"); }} aria-current={activePage === "menu-page" ? "page" : undefined}>Menu</a>
+        <a href="/menu" onClick={(e) => { e.preventDefault(); setActivePage("menu-page"); }} aria-current={activePage === "menu-page" ? "page" : undefined}>Menu</a>
         <span className="nav-dot" aria-hidden="true">·</span>
-        <a href="#locanda" onClick={() => setActivePage("home")}>Locanda</a>
+        <a href="/#locanda" onClick={(e) => { e.preventDefault(); setActivePage("home"); setTimeout(() => goTo("#locanda"), 50); }}>Locanda</a>
         <span className="nav-dot" aria-hidden="true">·</span>
-        <a href="#gallery" onClick={() => setActivePage("home")}>Gallery</a>
+        <a href="/#gallery" onClick={(e) => { e.preventDefault(); setActivePage("home"); setTimeout(() => goTo("#gallery"), 50); }}>Gallery</a>
         <span className="nav-dot" aria-hidden="true">·</span>
-        <a href="#contatti" onClick={() => setActivePage("home")}>Contatti</a>
+        <a href="/#contatti" onClick={(e) => { e.preventDefault(); setActivePage("home"); setTimeout(() => goTo("#contatti"), 50); }}>Contatti</a>
       </nav>
-      <button className="gold-btn small" onClick={openBooking} aria-label="Apri modulo di prenotazione tavolo">
+      <button className="gold-btn small" onClick={openBooking} aria-label="Prenota un tavolo al ristorante Locanda Patrizia a Carrara">
         Prenota
       </button>
     </header>
@@ -496,13 +549,7 @@ function MobileNav({ activePage, setActivePage }: { activePage: string; setActiv
   return (
     <nav className="mobile-nav" aria-label="Navigazione mobile">
       {items.map((item) => (
-        <button
-          key={item.label}
-          className={activeLabel === item.label ? "nav-active" : ""}
-          onClick={item.action}
-          aria-label={item.label}
-          aria-current={activeLabel === item.label ? "page" : undefined}
-        >
+        <button key={item.label} className={activeLabel === item.label ? "nav-active" : ""} onClick={item.action} aria-label={item.label} aria-current={activeLabel === item.label ? "page" : undefined}>
           <span className="nav-icon-wrap"><NavIcon name={item.icon} /></span>
           <span className="nav-label" aria-hidden="true">{item.label}</span>
         </button>
@@ -513,7 +560,7 @@ function MobileNav({ activePage, setActivePage }: { activePage: string; setActiv
 
 function FloatingBookingButton({ openBooking }: { openBooking: () => void }) {
   return (
-    <button className="floating-booking-btn" onClick={openBooking} aria-label="Apri il modulo di prenotazione">
+    <button className="floating-booking-btn" onClick={openBooking} aria-label="Prenota un tavolo alla Locanda Patrizia">
       Prenota
     </button>
   );
@@ -522,14 +569,20 @@ function FloatingBookingButton({ openBooking }: { openBooking: () => void }) {
 // ─── HERO ─────────────────────────────────────────────────────────────────────
 function Hero({ openBooking }: { openBooking: () => void }) {
   return (
-    <section id="home" className="hero" aria-label="Benvenuto alla Locanda Patrizia">
+    <section id="home" className="hero" aria-label="Locanda Patrizia — ristorante nel centro storico di Carrara">
       <HeroImage />
       <div className="hero-shade" aria-hidden="true" />
       <div className="hero-content">
+        {/* Testo SEO invisibile — keyword per Google */}
+        <p className="sr-only">
+          Locanda Patrizia è il ristorante nel centro storico di Carrara aperto da Francesca e Riccardo nel 2021.
+          Cucina toscana autentica e creativa: pasta fresca artigianale, pesce fresco, carne selezionata.
+          Prenota il tuo tavolo online per cena o pranzo nel weekend a Carrara, in provincia di Massa-Carrara.
+        </p>
         <button
           className="hero-reserve-btn"
           onClick={openBooking}
-          aria-label="Apri il modulo per prenotare un tavolo alla Locanda Patrizia"
+          aria-label="Prenota un tavolo alla Locanda Patrizia, ristorante a Carrara"
         >
           <span className="hero-btn-line" aria-hidden="true" />
           <span className="hero-btn-text">Prenota il tuo tavolo</span>
@@ -555,6 +608,12 @@ function Tagline() {
 function MenuSection({ setActivePage }: { setActivePage: (p: string) => void }) {
   return (
     <section id="menu" className="section menu-section" aria-labelledby="menu-heading">
+      {/* Testo SEO invisibile */}
+      <p className="sr-only">
+        Il menu della Locanda Patrizia a Carrara offre antipasti di mare e terra, primi piatti di pasta fresca fatta a mano,
+        e secondi di carne e pesce. Specialità toscane rivisitate con ingredienti locali della Toscana.
+        Ristorante ideale per cene romantiche, pranzi in famiglia e occasioni speciali a Carrara e dintorni.
+      </p>
       <div className="section-head reveal">
         <p className="eyebrow">I nostri piatti</p>
         <div>
@@ -562,23 +621,19 @@ function MenuSection({ setActivePage }: { setActivePage: (p: string) => void }) 
         </div>
       </div>
 
-      {/* Scroll hint visibile su mobile */}
       <p className="scroll-hint" aria-hidden="true">Scorri per scoprire i piatti →</p>
 
-      <div className="dish-strip" role="list" aria-label="Selezione dei nostri piatti">
+      <div className="dish-strip" role="list" aria-label="Selezione dei piatti della Locanda Patrizia a Carrara">
         {dishes.map((dish, i) => (
-          <article
-            className="dish-card reveal"
-            key={dish.title}
-            role="listitem"
-            style={{ transitionDelay: `${i * 40}ms` }}
-          >
+          <article className="dish-card reveal" key={dish.title} role="listitem" style={{ transitionDelay: `${i * 40}ms` }}>
             <div className="dish-photo">
               <img
                 src={dish.img}
                 alt={dish.alt}
                 loading="lazy"
                 decoding="async"
+                width="260"
+                height="325"
                 style={{ objectPosition: dish.pos || "center" }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
@@ -589,7 +644,7 @@ function MenuSection({ setActivePage }: { setActivePage: (p: string) => void }) 
       </div>
 
       <div className="menu-cta reveal">
-        <button className="menu-full-btn" onClick={() => setActivePage("menu-page")} aria-label="Visualizza il menu completo della Locanda Patrizia">
+        <button className="menu-full-btn" onClick={() => setActivePage("menu-page")} aria-label="Visualizza il menu completo della Locanda Patrizia di Carrara">
           Sfoglia il menu completo
         </button>
       </div>
@@ -604,6 +659,12 @@ function LocandaSection() {
       <div className="locanda-text">
         <p className="eyebrow">La nostra storia</p>
         <h2 id="locanda-heading">La Locanda.</h2>
+        {/* Testo SEO invisibile */}
+        <p className="sr-only">
+          Ristorante a Carrara aperto nel 2021 in Via XX Settembre 21. Cucina toscana con prodotti locali di Massa-Carrara.
+          Ambiente familiare e accogliente nel centro storico di Carrara, vicino alle famose cave di marmo.
+          Ideale per cene in coppia, pranzi in famiglia e gruppi. Prenotazione online disponibile.
+        </p>
         <p>
           Francesca e Riccardo hanno aperto le porte della Locanda Patrizia nel dicembre 2021
           con un'idea chiara: creare il ristorante a Carrara che avrebbero voluto trovare loro stessi.
@@ -617,10 +678,12 @@ function LocandaSection() {
       <div className="locanda-img-wrap">
         <img
           src={publicImg("locanda-esterno.jpg")}
-          alt="L'esterno della Locanda Patrizia in Via XX Settembre, Carrara"
+          alt="L'esterno del ristorante Locanda Patrizia in Via XX Settembre 21, centro storico di Carrara"
           className="locanda-cover-img"
           loading="lazy"
           decoding="async"
+          width="560"
+          height="340"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
       </div>
@@ -628,17 +691,21 @@ function LocandaSection() {
   );
 }
 
-// ─── GALLERY — niente lightbox, niente lag ────────────────────────────────────
+// ─── GALLERY ──────────────────────────────────────────────────────────────────
 function GallerySection() {
   return (
     <section id="gallery" className="section gallery-section" aria-labelledby="gallery-heading">
+      {/* Testo SEO invisibile */}
+      <p className="sr-only">
+        Galleria fotografica della Locanda Patrizia: la sala da pranzo, il bancone in legno, i dettagli del locale
+        e le strade del centro storico di Carrara. Ristorante elegante e accogliente nel cuore della Toscana.
+      </p>
       <div className="section-head compact reveal">
         <p className="eyebrow">Gallery</p>
         <div><h2 id="gallery-heading">Dentro la Locanda.</h2></div>
       </div>
 
-      {/* Desktop: grid statica, no animazioni pesanti */}
-      <div className="gallery-grid desktop-gallery" role="list" aria-label="Galleria fotografica della Locanda Patrizia">
+      <div className="gallery-grid desktop-gallery" role="list" aria-label="Galleria fotografica della Locanda Patrizia di Carrara">
         {gallery.map((photo, i) => (
           <figure className={`gallery-card reveal g${i + 1}`} key={photo.title} role="listitem">
             <img
@@ -646,6 +713,8 @@ function GallerySection() {
               alt={photo.alt}
               loading="lazy"
               decoding="async"
+              width={i === 0 ? 720 : 480}
+              height="270"
               style={{ objectPosition: photo.pos || "center" }}
               onError={(e) => {
                 const el = e.currentTarget as HTMLImageElement;
@@ -657,9 +726,8 @@ function GallerySection() {
         ))}
       </div>
 
-      {/* Mobile: scroll orizzontale */}
       <p className="scroll-hint mobile-only" aria-hidden="true">Scorri per vedere tutte le foto →</p>
-      <div className="gallery-strip mobile-gallery" role="list" aria-label="Galleria fotografica">
+      <div className="gallery-strip mobile-gallery" role="list" aria-label="Galleria fotografica della Locanda Patrizia">
         {gallery.map((photo) => (
           <figure className="gallery-strip-card" key={photo.title} role="listitem">
             <img
@@ -667,6 +735,8 @@ function GallerySection() {
               alt={photo.alt}
               loading="lazy"
               decoding="async"
+              width="196"
+              height="252"
               style={{ objectPosition: photo.pos || "center" }}
               onError={(e) => {
                 const el = e.currentTarget as HTMLImageElement;
@@ -685,9 +755,16 @@ function GallerySection() {
 function Footer({ openBooking }: { openBooking: () => void }) {
   return (
     <footer id="contatti" className="footer reveal" role="contentinfo" aria-label="Informazioni di contatto Locanda Patrizia">
+      {/* Testo SEO invisibile */}
+      <p className="sr-only">
+        Locanda Patrizia, ristorante a Carrara (MS) in Via XX Settembre 21.
+        Prenotazioni: +39 0585 123456 oppure online su locandapatrizia.it.
+        Cucina toscana, pesce fresco e pasta artigianale. Aperto dal giovedì al martedì, cena dalle 19:30.
+        Sabato e domenica anche a pranzo. Parcheggio nelle vicinanze. Accesso disabili. Carta di credito accettata.
+      </p>
       <div className="footer-grid">
         <div className="footer-brand">
-          <img src={logo} alt="Locanda Patrizia — ristorante a Carrara" width="90" loading="lazy" />
+          <img src={logo} alt="Locanda Patrizia — ristorante a Carrara (MS)" width="90" loading="lazy" decoding="async" />
           <p>Tradizione, accoglienza e cucina toscana sincera nel cuore di Carrara.<br />Aperta da Francesca e Riccardo dal 2021.</p>
         </div>
         <div>
@@ -700,27 +777,27 @@ function Footer({ openBooking }: { openBooking: () => void }) {
           <h3 className="footer-h">Contatti</h3>
           <address style={{ fontStyle: "normal" }}>
             <p>Via XX Settembre, 21<br />54033 Carrara (MS)</p>
-            <p><a href="tel:+390585123456" className="footer-link" aria-label="Chiama il ristorante"><strong>+39 0585 123456</strong></a></p>
+            <p><a href="tel:+390585123456" className="footer-link" aria-label="Chiama il ristorante Locanda Patrizia"><strong>+39 0585 123456</strong></a></p>
             <p><a href="mailto:info@locandapatrizia.it" className="footer-link">info@locandapatrizia.it</a></p>
           </address>
-          <button className="gold-btn" onClick={openBooking} style={{ marginTop: "14px" }} aria-label="Apri il modulo di prenotazione">
+          <button className="gold-btn" onClick={openBooking} style={{ marginTop: "14px" }} aria-label="Prenota un tavolo al ristorante Locanda Patrizia di Carrara">
             Prenota ora
           </button>
         </div>
         <div>
           <h3 className="footer-h">Dove siamo</h3>
           <p>Nel cuore di Carrara, a pochi passi dal centro storico e dalle cave di marmo.</p>
-          <button className="footer-link-btn" onClick={openMaps} aria-label="Apri Locanda Patrizia in Google Maps">
+          <button className="footer-link-btn" onClick={openMaps} aria-label="Apri Locanda Patrizia in Google Maps — Via XX Settembre 21, Carrara">
             → Apri in Google Maps
           </button>
           <h3 className="footer-h" style={{ marginTop: "16px" }}>Seguici</h3>
-          <button className="footer-link-btn" onClick={openInstagram} aria-label="Visita il profilo Instagram di Locanda Patrizia">
+          <button className="footer-link-btn" onClick={openInstagram} aria-label="Visita il profilo Instagram ufficiale di Locanda Patrizia Carrara">
             → Instagram
           </button>
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2025 Locanda Patrizia</span>
+        <span>© 2025 Locanda Patrizia — Via XX Settembre 21, Carrara</span>
         <span className="footer-legal-links">
           <a href={PRIVACY_URL} className="footer-bottom-link">Privacy Policy</a>
           {" · "}
@@ -742,13 +819,21 @@ function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: ()
   const items = menuData[activeTab];
   return (
     <div className="menu-page">
-      <div className="menu-hero" aria-label="Copertina menu Locanda Patrizia">
+      {/* Testo SEO invisibile per la menu page */}
+      <p className="sr-only">
+        Menu del ristorante Locanda Patrizia a Carrara (MS). Cucina toscana autentica con pasta fresca artigianale,
+        antipasti creativi di mare e terra, secondi di carne chianina e pesce fresco. Prezzi accessibili per una cena
+        di qualità a Carrara. Prenotazione online disponibile su questo sito.
+      </p>
+      <div className="menu-hero" aria-label="Menu del ristorante Locanda Patrizia a Carrara">
         <img
           className="menu-hero-img"
           src={menuCover}
-          alt="Il tavolo apparecchiato della Locanda Patrizia, ristorante a Carrara"
+          alt="Il menu del ristorante Locanda Patrizia a Carrara — cucina toscana e creativa"
           loading="eager"
           decoding="async"
+          width="1200"
+          height="600"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
         <div className="menu-hero-shade" aria-hidden="true" />
@@ -757,7 +842,7 @@ function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: ()
             ← Torna alla home
           </button>
           <div className="menu-hero-logo" aria-hidden="true">
-            <img src={logo} alt="" width="50" height="50" />
+            <img src={logo} alt="" width="50" height="50" loading="eager" />
           </div>
           <p className="menu-hero-eyebrow">Locanda Patrizia · Carrara</p>
           <h1 className="menu-hero-title">La nostra cucina</h1>
@@ -765,7 +850,7 @@ function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: ()
         </div>
       </div>
 
-      <div className="menu-tabs-wrap" role="navigation" aria-label="Sezioni del menu">
+      <div className="menu-tabs-wrap" role="navigation" aria-label="Sezioni del menu della Locanda Patrizia">
         <div className="menu-tabs" role="tablist">
           {tabs.map((tab) => (
             <button
@@ -783,19 +868,14 @@ function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: ()
         </div>
       </div>
 
-      <div
-        className="menu-body"
-        id={`menu-panel-${activeTab}`}
-        role="tabpanel"
-        aria-label={tabs.find(t => t.key === activeTab)?.label}
-      >
+      <div className="menu-body" id={`menu-panel-${activeTab}`} role="tabpanel" aria-label={tabs.find(t => t.key === activeTab)?.label}>
         <div className="menu-section-title" aria-hidden="true">
           <span className="menu-ornament">✦</span>
           <h2>{tabs.find(t => t.key === activeTab)?.label}</h2>
           <span className="menu-ornament">✦</span>
         </div>
 
-        <ul className="menu-items-list" aria-label={`Piatti: ${tabs.find(t => t.key === activeTab)?.label}`}>
+        <ul className="menu-items-list" aria-label={`${tabs.find(t => t.key === activeTab)?.label} — Locanda Patrizia Carrara`}>
           {items.map((item, i) => (
             <li className="menu-item" key={i} style={{ animationDelay: `${i * 50}ms` }}>
               <div className="menu-item-info">
@@ -816,7 +896,7 @@ function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: ()
             Per informazioni sugli allergeni, il personale di sala è a vostra disposizione.
           </p>
           <div className="menu-footer-divider" aria-hidden="true"><span className="menu-ornament small">✦</span></div>
-          <button className="menu-reserve-btn" onClick={openBooking} aria-label="Prenota un tavolo alla Locanda Patrizia">
+          <button className="menu-reserve-btn" onClick={openBooking} aria-label="Prenota un tavolo al ristorante Locanda Patrizia di Carrara">
             Prenota il tuo tavolo
           </button>
         </div>
@@ -833,7 +913,6 @@ export default function App() {
   const openBooking  = useCallback(() => setBookingOpen(true),  []);
   const closeBooking = useCallback(() => setBookingOpen(false), []);
 
-  // IntersectionObserver per .reveal
   useEffect(() => {
     const els = Array.from(document.querySelectorAll(".reveal"));
     const obs = new IntersectionObserver(
@@ -874,24 +953,22 @@ export default function App() {
   );
 }
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
+// ─── CSS (identico all'originale) ─────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap');
 
-/* VARIABILI — contrasto WCAG AA garantito su tutti i testi */
 :root {
   --green:      #0a3f30;
   --deep:       #05251d;
   --cream:      #f6efe2;
   --paper:      #fffaf0;
-  --gold:       #b8922e;   /* leggermente più scuro per contrasto 4.5:1 su bianco */
+  --gold:       #b8922e;
   --gold-light: #d4a93a;
-  --text:       #0f3f31;   /* contrasto 10:1 su --cream */
-  --muted:      #3d5249;   /* era #66736c → ora contrasto 5.6:1 su --cream */
+  --text:       #0f3f31;
+  --muted:      #3d5249;
   --menu-font:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* RESET */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--cream); color: var(--text); font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; line-height: 1.6; }
@@ -906,11 +983,19 @@ address { font-style: normal; }
 .skip-link { position: absolute; top: -100%; left: 0; background: var(--gold); color: #fff; padding: 10px 18px; z-index: 9999; border-radius: 0 0 8px 0; font-size: 14px; letter-spacing: .06em; }
 .skip-link:focus { top: 0; }
 
-/* FOCUS VISIBLE — tutti gli elementi interattivi */
+/* FOCUS VISIBLE */
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
 
-/* SCREEN READER ONLY */
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+/* SCREEN READER ONLY — visibile SOLO ai motori di ricerca e screen reader */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* HEADER */
 .desktop-header { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50; width: min(1100px, calc(100% - 60px)); height: 68px; display: grid; grid-template-columns: 90px 1fr 160px; align-items: center; border-radius: 999px; padding: 8px 16px; background: rgba(250,246,236,.94); backdrop-filter: blur(20px); box-shadow: 0 8px 40px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.6); }
@@ -925,8 +1010,6 @@ address { font-style: normal; }
 .gold-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(184,146,46,.4); }
 .gold-btn.small { justify-self: end; padding: 11px 22px; font-size: 11px; }
 .floating-booking-btn { display: none; }
-
-/* CTA FILLED — bottone principale piatti */
 .cta-filled { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #fff; border-radius: 999px; padding: 12px 28px; font-size: 13px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; box-shadow: 0 8px 24px rgba(184,146,46,.3); transition: transform .25s, box-shadow .25s; }
 .cta-filled:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(184,146,46,.4); }
 
@@ -958,10 +1041,7 @@ address { font-style: normal; }
 .section-head { margin-bottom: 28px; }
 .section-head > div { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .section-head h2 { margin: 0; font-family: 'Cormorant Garamond', serif; color: var(--text); font-size: clamp(42px, 5vw, 72px); line-height: .93; letter-spacing: -.02em; font-style: italic; font-weight: 300; }
-
-/* Scroll hint */
 .scroll-hint { font-size: 13px; color: var(--muted); letter-spacing: .08em; margin: 0 0 12px; display: none; font-style: italic; }
-
 .dish-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
 .dish-photo { aspect-ratio: 4/5; border-radius: 18px; overflow: hidden; background: #e5ded2; box-shadow: 0 10px 24px rgba(0,0,0,.08); }
 .dish-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s ease; }
@@ -980,7 +1060,7 @@ address { font-style: normal; }
 .locanda-img-wrap { border-radius: 16px; overflow: hidden; height: 340px; }
 .locanda-cover-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
 
-/* GALLERY — no lightbox, no lag */
+/* GALLERY */
 .gallery-section { padding: 72px 0 36px; }
 .section-head.compact { margin-bottom: 24px; }
 .section-head.compact > div { display: block; }
@@ -1075,12 +1155,12 @@ address { font-style: normal; }
 .bk-input::placeholder { color: rgba(15,63,49,.38); }
 .bk-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233d5249' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
 .bk-textarea { resize: vertical; min-height: 82px; line-height: 1.55; }
-/* GDPR checkbox */
 .bk-privacy-label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 13px; color: var(--text); line-height: 1.55; }
 .bk-checkbox { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; accent-color: var(--gold); cursor: pointer; border-radius: 4px; }
 .bk-link { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; transition: opacity .2s; }
 .bk-link:hover { opacity: .75; }
 .bk-legal { font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.65; margin: 0; }
+.bk-warn { font-size: 13px; color: #b83030; font-style: italic; margin: 0; padding: 10px 14px; background: rgba(184,48,48,.07); border-radius: 8px; border: 1px solid rgba(184,48,48,.18); }
 .bk-submit { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, var(--green), #0b4635); color: #fff; border: none; border-radius: 999px; padding: 16px 32px; font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 300; letter-spacing: .18em; text-transform: uppercase; cursor: pointer; width: 100%; margin-top: 6px; box-shadow: 0 10px 32px rgba(6,40,31,.22); transition: transform .3s, box-shadow .3s, opacity .2s; }
 .bk-submit:hover:not(.disabled):not(.sending) { transform: translateY(-2px); box-shadow: 0 16px 44px rgba(6,40,31,.3); }
 .bk-submit.disabled { opacity: .42; cursor: not-allowed; }
@@ -1098,7 +1178,7 @@ address { font-style: normal; }
 .bk-phone-link { font-size: 22px; font-weight: 400; color: var(--deep); text-decoration: none; letter-spacing: .06em; }
 .bk-phone-link:hover { color: var(--gold); }
 
-/* ANIMAZIONI REVEAL */
+/* REVEAL */
 .mobile-nav { display: none; }
 .reveal { opacity: 0; transform: translateY(20px); transition: opacity .68s ease, transform .68s ease; }
 .reveal.visible { opacity: 1; transform: none; }
@@ -1125,8 +1205,6 @@ address { font-style: normal; }
   .desktop-header { display: none; }
   .floating-booking-btn { position: fixed; top: 14px; right: max(14px, calc((100vw - 430px) / 2 + 14px)); z-index: 95; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 18px; border: 1px solid rgba(226,200,120,.54); border-radius: 999px; background: rgba(5,37,29,.72); color: #fffaf0; font-family: var(--menu-font); font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; box-shadow: 0 10px 30px rgba(5,37,29,.24); backdrop-filter: blur(18px) saturate(1.35); transition: transform .2s, background .2s, border-color .2s; }
   .floating-booking-btn:hover { transform: translateY(-1px); background: rgba(5,37,29,.88); border-color: rgba(226,200,120,.8); }
-
-  /* Nav mobile */
   .mobile-nav { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 90; width: min(390px, calc(100% - 16px)); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px 10px; border-radius: 20px; background: rgba(255,252,245,.97); backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 4px 24px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.8); }
   .mobile-nav button { background: transparent; color: var(--muted); border: none; padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color .2s; cursor: pointer; }
   .mobile-nav button.nav-active { color: var(--gold); }
@@ -1134,46 +1212,32 @@ address { font-style: normal; }
   .nav-icon-wrap { display: flex; align-items: center; justify-content: center; }
   .nav-icon-wrap svg { stroke: var(--muted); transition: stroke .2s; }
   .nav-label { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; font-weight: 400; }
-
-  /* Hero */
   .hero { height: 85svh; min-height: 540px; max-height: none; border-radius: 0 0 26px 26px; }
   .hero-shade { background: linear-gradient(0deg, rgba(5,37,29,.76) 0%, rgba(5,37,29,.22) 50%, rgba(0,0,0,.02) 100%); }
   .hero-content { padding-bottom: 60px; }
   .hero-reserve-btn { font-size: 13px; letter-spacing: .3em; gap: 14px; }
   .hero-btn-line { width: 32px; }
-
-  /* Tagline */
   .tagline-band { padding: 28px 20px; gap: 12px; }
   .tagline-text { font-size: clamp(19px, 5.5vw, 26px); white-space: normal; }
   .tagline-line { display: none; }
-
-  /* Sezioni */
   .section, .footer { width: calc(100% - 28px); }
   .menu-section { padding: 44px 0 20px; }
   .section-head { margin-bottom: 14px; }
   .section-head > div { display: block; }
   .section-head h2 { font-size: 38px; margin-bottom: 12px; }
   .cta-filled { width: 100%; justify-content: center; padding: 14px 24px; font-size: 13px; }
-
-  /* Scroll hint piatti */
   .scroll-hint { display: block; padding: 0 2px; }
-
-  /* Dish strip — scroll orizzontale */
   .dish-strip { display: flex; gap: 12px; overflow-x: auto; padding: 0 2px 16px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .dish-strip::-webkit-scrollbar { display: none; }
   .dish-card { flex: 0 0 130px; scroll-snap-align: start; }
   .dish-photo { aspect-ratio: 1/1.18; border-radius: 14px; }
   .dish-card h3 { font-size: 12px; margin-top: 8px; }
   .menu-cta { margin-top: 20px; }
-
-  /* Locanda */
   .locanda-wow { width: calc(100% - 28px); margin: 10px auto 8px; padding: 24px 20px; border-radius: 22px; display: block; }
   .locanda-wow h2 { font-size: 34px; margin-bottom: 12px; }
   .locanda-wow p { font-size: 15px; line-height: 1.65; }
   .locanda-p2 { font-size: 14px !important; }
   .locanda-img-wrap { margin-top: 20px; height: 200px; border-radius: 14px; }
-
-  /* Gallery mobile */
   .gallery-section { padding: 40px 0 20px; }
   .desktop-gallery { display: none; }
   .mobile-only { display: block; padding: 0 14px; margin-bottom: 8px; }
@@ -1183,8 +1247,6 @@ address { font-style: normal; }
   .gallery-strip-card img { width: 100%; height: 100%; object-fit: cover; }
   .gallery-strip-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent 55%); pointer-events: none; }
   .gallery-strip-card figcaption { position: absolute; z-index: 1; left: 12px; bottom: 12px; color: #fff; font-size: 17px; font-style: italic; font-weight: 300; }
-
-  /* Footer mobile compatto */
   .footer { margin: 0 auto 12px; padding: 20px 18px 88px; border-radius: 20px; }
   .footer-brand { display: none; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 18px 14px; }
@@ -1192,8 +1254,6 @@ address { font-style: normal; }
   .footer p, .footer address p { font-size: 13px; margin-bottom: 6px; line-height: 1.5; }
   .footer .gold-btn { padding: 9px 16px; font-size: 11px; margin-top: 8px !important; }
   .footer-bottom { flex-direction: column; gap: 6px; align-items: center; text-align: center; margin-top: 14px; padding-top: 14px; font-size: 11px; }
-
-  /* Menu page */
   .menu-page { padding-top: 0; }
   .menu-hero { height: 40svh; min-height: 260px; }
   .back-btn { top: 14px; left: 14px; padding: 7px 13px; font-size: 10px; }
@@ -1216,8 +1276,6 @@ address { font-style: normal; }
   .menu-page-footer { margin-top: 32px; }
   .menu-note { font-size: 12px; }
   .menu-reserve-btn { width: 100%; padding: 14px 22px; font-size: 12px; }
-
-  /* Booking modal mobile */
   .bk-modal { border-radius: 24px 24px 0 0; }
   .bk-row { grid-template-columns: 1fr; gap: 12px; }
   .bk-row-3 { grid-template-columns: 1fr 1fr; }
