@@ -1,5 +1,6 @@
 import logo from "./assets/logo.webp";
-import menuCover from "./assets/menu-cover.webp";
+
+const menuHero = "/menu-hero.jpg";
 
 type MenuKey = "antipasti" | "primi" | "secondi";
 type MenuItem = {
@@ -58,12 +59,12 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
       <div className="menu-hero" aria-label="Menu del ristorante Locanda Patrizia a Carrara">
         <img
           className="menu-hero-img"
-          src={menuCover}
-          alt="Il menu del ristorante Locanda Patrizia a Carrara — cucina toscana e creativa"
+          src={menuHero}
+          alt="Illustrazione del menu Locanda Patrizia con la frase La felicità è fatta di buoni ingredienti"
           loading="eager"
           decoding="async"
-          width="1200"
-          height="600"
+          width="1800"
+          height="1200"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
         <div className="menu-hero-shade" aria-hidden="true" />
