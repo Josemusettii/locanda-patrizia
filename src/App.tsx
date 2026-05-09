@@ -85,6 +85,7 @@ const gallery: Photo[] = [
   { title: "La sala",     alt: "La sala da pranzo della Locanda Patrizia con tavoli apparecchiati e statue di marmo di Carrara",           img: publicImg("gallery-statua.jpg"), fallback: esternoCarrara,  pos: "50% 50%" },
   { title: "Carrara",     alt: "Il centro storico di Carrara con arte di strada — dove si trova la Locanda Patrizia ristorante",           img: esternoCarrara,                                             pos: "50% 50%" },
   { title: "I dettagli",  alt: "Dettagli del bancone della Locanda Patrizia: bottiglie di vino, sculture e fiori secchi",                 img: publicImg("gallery-tavolo.jpg"),                            pos: "50% 50%" },
+  { title: "La chicca",   alt: "Le caramelle di benvenuto della Locanda Patrizia con quadri e dettagli di sala",                         img: publicImg("gallery-chicca.jpg"),                            pos: "50% 56%" },
   { title: "Il menu",     alt: "La copertina illustrata del menu della Locanda Patrizia, ristorante a Carrara in Piazza delle Erbe, 1",        img: menuCover,                                                  pos: "50% 50%" },
 ];
 

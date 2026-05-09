@@ -1,44 +1,52 @@
-import { useState } from "react";
 import logo from "./assets/logo.webp";
 import menuCover from "./assets/menu-cover.webp";
 
-const menuData = {
+type MenuKey = "antipasti" | "primi" | "secondi";
+type MenuItem = {
+  name: string;
+  description: string;
+  price: number;
+  tag?: string;
+};
+
+const menuData: Record<MenuKey, MenuItem[]> = {
   antipasti: [
-    { name: "Frittino di mare del giorno", price: 14 },
-    { name: "Lingua salmistrata tonnata con salsa verde e gel al lime", price: 18, tag: "1/7" },
-    { name: "Tacos con tartare di tonno, guacamole, crème fraîche all'erba cipollina e gelatina al mojito", price: 16, tag: "4/7" },
-    { name: "Tacos con pulled pork, guacamole e crème fraîche all'erba cipollina", price: 16 },
-    { name: "Battuta al coltello di chianina e i suoi condimenti", price: 16 },
-    { name: "Il nostro uovo al purgatorio, fonduta di parmigiano, olio al basilico e pane croccante", price: 12 },
-    { name: "Riso cacio e pepe al salto con tartar di gambero, gel al mango, avocado e la nostra teriaki", price: 16 },
+    { name: "Lingua Salmistrata", description: "Con salsa verde, salsa tonnata e gel al lime", price: 18 },
+    { name: "L'Uovo al Purgatorio", description: "Uovo bio, fonduta di Parmigiano Reggiano, olio al basilico e crostone di pane", price: 18 },
+    { name: "Tacos Fusion", description: "Pulled pork artigianale, guacamole e crème fraîche all'erba cipollina", price: 16 },
+    { name: "Tacos Summer", description: "Tartare di tonno, guacamole, crème fraîche all'erba cipollina e gel al mojito", price: 16 },
+    { name: "La Chianina", description: "Battuta al coltello di pura Chianina e i suoi condimenti classici", price: 16 },
+    { name: "Il Fresco", description: "Frittino di mare del giorno secondo mercato", price: 14 },
+    { name: "Riso al Salto", description: "Riso cacio e pepe croccante, tartare di gambero blu, gel al mango e teriyaki", price: 17 },
   ],
   primi: [
-    { name: "Cappellacci al ricordo di baccalà marinato", price: 19 },
-    { name: "Lasagnette verdi al ragù", price: 13 },
-    { name: "Ravioli del plin ripieni di gamberi e lardo di Collonata su crema di asparagi", price: 20 },
-    { name: "Bottoni ripieni di quaglia, il suo fondo è crema di provola affumicata", price: 18 },
-    { name: "Spaghetti monograno Felicetti «Il Capelli» alle arselle sgusciate", price: 25 },
-    { name: "Pappardelle al ragù di cinghiale", price: 17 },
+    { name: "Ricordo di Baccalà", description: "Cappellacci fatti a mano con ripieno di baccalà marinato", price: 19 },
+    { name: "Bottoni alla Quaglia", description: "Ripieni di quaglia su crema di provola affumicata e il suo fondo", price: 18 },
+    { name: "La Tradizione", description: "Lasagnette verdi \"stordellata\" con il tipico ripieno dei tordelli alla carrarese", price: 15 },
+    { name: "Cacciagione", description: "Pappardelle al cervo", price: 18 },
+    { name: "Mare e Terra", description: "Ravioli del plin ai gamberi e lardo di Colonnata su crema di asparagi", price: 20 },
+    { name: "Lo Spaghetto", description: "Monograno Felicetti, vongole veraci sgusciate, zest di limone e bottarga", price: 25 },
   ],
   secondi: [
-    { name: "Il nostro pollo alla birra ripieno di verdure, salsiccia e formaggio con patate duchesse", price: 17 },
-    { name: "Costolette di agnello panate alle erbette di montagna con patate e il suo fondo", price: 25 },
-    { name: "Filetto di maialino CBT in crosta di semi di zucca, il suo fondo e pioppini saltati", price: 17 },
-    { name: "Il piccioncino col suo fondo, radicchio e crema di carote", price: 25 },
-    { name: "Vaporata di calamari e gamberi con verdure marinate", price: 20 },
-    { name: "Polpo in doppia cottura su purea di patate al limone, petali di cipolla croccante e la sua maionese", price: 22 },
+    { name: "Il Polpo", description: "In doppia cottura su crema di patate al limone, cipolla croccante e maionese", price: 22 },
+    { name: "Pollo alla Birra", description: "Ripieno di verdure e salsiccia con patate duchesse", price: 17 },
+    { name: "La Vaporata", description: "Calamari e gamberi al vapore con verdurine marinate", price: 20 },
+    { name: "L'Agnello", description: "Costolette alle erbe di montagna, patate novelle e fondo bruno", price: 25 },
+    { name: "Il Nostro Piccione", description: "Con crema di carote, radicchio e il suo fondo", price: 24 },
   ],
 };
 
 // ─── MENU PAGE ────────────────────────────────────────────────────────────────
 export default function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: () => void }) {
-  const [activeTab, setActiveTab] = useState<"antipasti" | "primi" | "secondi">("antipasti");
   const tabs = [
     { key: "antipasti" as const, label: "Antipasti",      sub: "Per iniziare" },
     { key: "primi"     as const, label: "Primi Piatti",   sub: "Paste & risotti" },
     { key: "secondi"   as const, label: "Secondi Piatti", sub: "Carne & pesce" },
   ];
-  const items = menuData[activeTab];
+  const jumpTo = (key: MenuKey) => {
+    document.getElementById(`menu-panel-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="menu-page">
       {/* Testo SEO invisibile per la menu page */}
@@ -73,15 +81,12 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
       </div>
 
       <div className="menu-tabs-wrap" role="navigation" aria-label="Sezioni del menu della Locanda Patrizia">
-        <div className="menu-tabs" role="tablist">
+        <div className="menu-tabs">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              className={`menu-tab${activeTab === tab.key ? " active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-              role="tab"
-              aria-selected={activeTab === tab.key}
-              aria-controls={`menu-panel-${tab.key}`}
+              className="menu-tab"
+              onClick={() => jumpTo(tab.key)}
             >
               <span className="tab-label">{tab.label}</span>
               <span className="tab-sub">{tab.sub}</span>
@@ -90,27 +95,38 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
         </div>
       </div>
 
-      <div className="menu-body" id={`menu-panel-${activeTab}`} role="tabpanel" aria-label={tabs.find(t => t.key === activeTab)?.label}>
-        <div className="menu-section-title" aria-hidden="true">
-          <span className="menu-ornament">✦</span>
-          <h2>{tabs.find(t => t.key === activeTab)?.label}</h2>
-          <span className="menu-ornament">✦</span>
-        </div>
+      <div className="menu-body">
+        <div className="menu-paper">
+          <div className="menu-paper-mark" aria-hidden="true">
+            <img src={logo} alt="" width="86" height="86" loading="lazy" />
+          </div>
 
-        <ul className="menu-items-list" aria-label={`${tabs.find(t => t.key === activeTab)?.label} — Locanda Patrizia Carrara`}>
-          {items.map((item, i) => (
-            <li className="menu-item" key={i} style={{ animationDelay: `${i * 50}ms` }}>
-              <div className="menu-item-info">
-                <p className="menu-item-name">{item.name}</p>
-                {"tag" in item && item.tag && (
-                  <span className="menu-item-tag" aria-label={`Allergeni: ${item.tag}`}>Allergeni: {item.tag}</span>
-                )}
+          {tabs.map((section) => (
+            <section className="menu-course" id={`menu-panel-${section.key}`} key={section.key} aria-labelledby={`menu-title-${section.key}`}>
+              <div className="menu-section-title">
+                <span aria-hidden="true" />
+                <h2 id={`menu-title-${section.key}`}>{section.label}</h2>
+                <span aria-hidden="true" />
               </div>
-              <div className="menu-item-separator" aria-hidden="true" />
-              <span className="menu-item-price" aria-label={`Prezzo: ${item.price} euro`}>{item.price} €</span>
-            </li>
+
+              <ul className="menu-items-list" aria-label={`${section.label} - Locanda Patrizia Carrara`}>
+                {menuData[section.key].map((item, i) => (
+                  <li className="menu-item" key={`${section.key}-${item.name}`} style={{ animationDelay: `${i * 36}ms` }}>
+                    <div className="menu-item-info">
+                      <p className="menu-item-name">{item.name}</p>
+                      <p className="menu-item-desc">{item.description}</p>
+                      {item.tag && (
+                        <span className="menu-item-tag" aria-label={`Allergeni: ${item.tag}`}>Allergeni: {item.tag}</span>
+                      )}
+                    </div>
+                    <div className="menu-item-separator" aria-hidden="true" />
+                    <span className="menu-item-price" aria-label={`Prezzo: ${item.price} euro`}>€ {item.price}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
 
         <div className="menu-page-footer">
           <p className="menu-note">
