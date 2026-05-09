@@ -12,7 +12,7 @@ type MenuItem = {
 const menuData: Record<MenuKey, MenuItem[]> = {
   antipasti: [
     { name: "Lingua Salmistrata", description: "Con salsa verde, salsa tonnata e gel al lime", price: 18 },
-    { name: "L'Uovo al Purgatorio", description: "Uovo bio, fonduta di Parmigiano Reggiano, olio al basilico e crostone di pane", price: 18 },
+    { name: "L'Uovo al Purgatorio", description: "Uovo bio, fonduta di Parmigiano Reggiano, olio al basilico e crostone di pane", price: 12 },
     { name: "Tacos Fusion", description: "Pulled pork artigianale, guacamole e crème fraîche all'erba cipollina", price: 16 },
     { name: "Tacos Summer", description: "Tartare di tonno, guacamole, crème fraîche all'erba cipollina e gel al mojito", price: 16 },
     { name: "La Chianina", description: "Battuta al coltello di pura Chianina e i suoi condimenti classici", price: 16 },
