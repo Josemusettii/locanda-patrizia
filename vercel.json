@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/menu", "destination": "/" },
+    { "source": "/prenota", "destination": "/" }
+  ]
+}

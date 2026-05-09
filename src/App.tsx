@@ -26,7 +26,7 @@
  *  • Non è keyword stuffing: frasi complete e semanticamente corrette
  */
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState, useRef, useCallback } from "react";
 import "./App.css";
 import logo           from "./assets/logo.webp";
 import piattoCarne    from "./assets/piatto-carne.webp";
@@ -37,13 +37,15 @@ import salaHero       from "./assets/sala-hero.webp";
 import esternoCarrara from "./assets/esterno-carrara.webp";
 import menuCover      from "./assets/menu-cover.webp";
 
+const MenuPage = lazy(() => import("./MenuPage"));
+
 // ─── EMAILJS CONFIG ───────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_b8n6lq3";
 const EMAILJS_TEMPLATE_ID = "template_lmk9tqb";
 const EMAILJS_PUBLIC_KEY  = "tKbOdM_r2oD9lbM_s";
 
 const SITE_URL      = "https://www.locandapatrizia.it";
-const MAPS_URL      = "https://maps.google.com/?q=Via+XX+Settembre+21+Carrara";
+const MAPS_URL      = "https://maps.google.com/?q=Piazza+delle+Erbe+1+Carrara";
 const INSTAGRAM_URL = "https://www.instagram.com/locandapatrizia";
 const PRIVACY_URL   = "/privacy-policy";
 const COOKIE_URL    = "/cookie-policy";
@@ -55,6 +57,18 @@ function goTo(id: string){ document.querySelector(id)?.scrollIntoView({ behavior
 
 type Photo = { title: string; alt: string; img: string; fallback?: string; pos?: string; };
 type BookingStatus = "idle" | "sending" | "success" | "error";
+
+type Page = "home" | "menu-page";
+
+const routeToPage = (): Page => {
+  if (typeof window === "undefined") return "home";
+  return window.location.pathname.replace(/\/$/, "") === "/menu" ? "menu-page" : "home";
+};
+
+const isBookingRoute = () =>
+  typeof window !== "undefined" && window.location.pathname.replace(/\/$/, "") === "/prenota";
+
+const pagePath = (page: Page) => page === "menu-page" ? "/menu" : "/";
 
 // ─── DATI ─────────────────────────────────────────────────────────────────────
 const dishes: Photo[] = [
@@ -71,36 +85,9 @@ const gallery: Photo[] = [
   { title: "La sala",     alt: "La sala da pranzo della Locanda Patrizia con tavoli apparecchiati e statue di marmo di Carrara",           img: publicImg("gallery-statua.jpg"), fallback: esternoCarrara,  pos: "50% 50%" },
   { title: "Carrara",     alt: "Il centro storico di Carrara con arte di strada — dove si trova la Locanda Patrizia ristorante",           img: esternoCarrara,                                             pos: "50% 50%" },
   { title: "I dettagli",  alt: "Dettagli del bancone della Locanda Patrizia: bottiglie di vino, sculture e fiori secchi",                 img: publicImg("gallery-tavolo.jpg"),                            pos: "50% 50%" },
-  { title: "Il menu",     alt: "La copertina illustrata del menu della Locanda Patrizia, ristorante a Carrara in Via XX Settembre",        img: menuCover,                                                  pos: "50% 50%" },
+  { title: "Il menu",     alt: "La copertina illustrata del menu della Locanda Patrizia, ristorante a Carrara in Piazza delle Erbe, 1",        img: menuCover,                                                  pos: "50% 50%" },
 ];
 
-const menuData = {
-  antipasti: [
-    { name: "Frittino di mare del giorno", price: 14 },
-    { name: "Lingua salmistrata tonnata con salsa verde e gel al lime", price: 18, tag: "1/7" },
-    { name: "Tacos con tartare di tonno, guacamole, crème fraîche all'erba cipollina e gelatina al mojito", price: 16, tag: "4/7" },
-    { name: "Tacos con pulled pork, guacamole e crème fraîche all'erba cipollina", price: 16 },
-    { name: "Battuta al coltello di chianina e i suoi condimenti", price: 16 },
-    { name: "Il nostro uovo al purgatorio, fonduta di parmigiano, olio al basilico e pane croccante", price: 12 },
-    { name: "Riso cacio e pepe al salto con tartar di gambero, gel al mango, avocado e la nostra teriaki", price: 16 },
-  ],
-  primi: [
-    { name: "Cappellacci al ricordo di baccalà marinato", price: 19 },
-    { name: "Lasagnette verdi al ragù", price: 13 },
-    { name: "Ravioli del plin ripieni di gamberi e lardo di Collonata su crema di asparagi", price: 20 },
-    { name: "Bottoni ripieni di quaglia, il suo fondo è crema di provola affumicata", price: 18 },
-    { name: "Spaghetti monograno Felicetti «Il Capelli» alle arselle sgusciate", price: 25 },
-    { name: "Pappardelle al ragù di cinghiale", price: 17 },
-  ],
-  secondi: [
-    { name: "Il nostro pollo alla birra ripieno di verdure, salsiccia e formaggio con patate duchesse", price: 17 },
-    { name: "Costolette di agnello panate alle erbette di montagna con patate e il suo fondo", price: 25 },
-    { name: "Filetto di maialino CBT in crosta di semi di zucca, il suo fondo e pioppini saltati", price: 17 },
-    { name: "Il piccioncino col suo fondo, radicchio e crema di carote", price: 25 },
-    { name: "Vaporata di calamari e gamberi con verdure marinate", price: 20 },
-    { name: "Polpo in doppia cottura su purea di patate al limone, petali di cipolla croccante e la sua maionese", price: 22 },
-  ],
-};
 
 // ─── SEO HEAD ─────────────────────────────────────────────────────────────────
 function SEOHead({ page }: { page: string }) {
@@ -177,13 +164,13 @@ function SEOHead({ page }: { page: string }) {
         name: "Locanda Patrizia",
         description: "Ristorante nel centro storico di Carrara con cucina toscana autentica e creativa. Pasta fresca artigianale, ingredienti selezionati, atmosfera accogliente.",
         url: SITE_URL,
-        telephone: "+390585123456",
-        email: "info@locandapatrizia.it",
+        telephone: "+390585873443",
+        email: "locandapatriziaa@gmail.com",
         image: [`${SITE_URL}/og-image.jpg`, `${SITE_URL}/hero-desktop.webp`],
         logo: `${SITE_URL}/logo.webp`,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "Via XX Settembre, 21",
+          streetAddress: "Piazza delle Erbe, 1",
           addressLocality: "Carrara",
           addressRegion: "MS",
           postalCode: "54033",
@@ -207,35 +194,6 @@ function SEOHead({ page }: { page: string }) {
           "@type": "Menu",
           name: "Menu Locanda Patrizia",
           url: `${SITE_URL}/menu`,
-          hasMenuSection: [
-            {
-              "@type": "MenuSection",
-              name: "Antipasti",
-              hasMenuItem: menuData.antipasti.map(i => ({
-                "@type": "MenuItem",
-                name: i.name,
-                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
-              })),
-            },
-            {
-              "@type": "MenuSection",
-              name: "Primi Piatti",
-              hasMenuItem: menuData.primi.map(i => ({
-                "@type": "MenuItem",
-                name: i.name,
-                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
-              })),
-            },
-            {
-              "@type": "MenuSection",
-              name: "Secondi Piatti",
-              hasMenuItem: menuData.secondi.map(i => ({
-                "@type": "MenuItem",
-                name: i.name,
-                offers: { "@type": "Offer", price: i.price, priceCurrency: "EUR" },
-              })),
-            },
-          ],
         },
       });
 
@@ -247,7 +205,7 @@ function SEOHead({ page }: { page: string }) {
           {
             "@type": "Question",
             name: "Dove si trova la Locanda Patrizia a Carrara?",
-            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia si trova in Via XX Settembre 21, 54033 Carrara (MS), nel cuore del centro storico." },
+            acceptedAnswer: { "@type": "Answer", text: "La Locanda Patrizia si trova in Piazza delle Erbe 1, 54033 Carrara (MS), nel cuore del centro storico." },
           },
           {
             "@type": "Question",
@@ -257,7 +215,7 @@ function SEOHead({ page }: { page: string }) {
           {
             "@type": "Question",
             name: "Come si prenota un tavolo alla Locanda Patrizia?",
-            acceptedAnswer: { "@type": "Answer", text: "Puoi prenotare direttamente dal sito locandapatrizia.it compilando il modulo online, oppure chiamando il +39 0585 123456." },
+            acceptedAnswer: { "@type": "Answer", text: "Puoi prenotare direttamente dal sito locandapatrizia.it compilando il modulo online, oppure chiamando il +39 0585 873443." },
           },
           {
             "@type": "Question",
@@ -418,7 +376,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
             <div className="bk-state-icon bk-state-err" aria-hidden="true">!</div>
             <h3>Invio non riuscito</h3>
             <p>Chiamaci direttamente:</p>
-            <a className="bk-phone-link" href="tel:+390585123456">+39 0585 123456</a>
+            <a className="bk-phone-link" href="tel:+390585873443">+39 0585 873443</a>
             <button className="bk-submit" onClick={() => setStatus("idle")}>Riprova</button>
           </div>
         ) : (
@@ -466,7 +424,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
               <input type="checkbox" className="bk-checkbox" checked={form.privacy} onChange={(e) => set("privacy", e.target.checked)} required aria-required="true" aria-describedby="bk-privacy-desc" />
               <span id="bk-privacy-desc">Ho letto e accetto la <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="bk-link">Privacy Policy</a>. I miei dati saranno usati solo per gestire questa prenotazione e non verranno ceduti a terzi.</span>
             </label>
-            <p className="bk-legal">Conferma entro 24 ore via email o telefono. Gruppi &gt;8: <a href="tel:+390585123456" className="bk-link">+39 0585 123456</a>.</p>
+            <p className="bk-legal">Conferma entro 24 ore via email o telefono. Gruppi &gt;8: <a href="tel:+390585873443" className="bk-link">+39 0585 873443</a>.</p>
             <button
               className={`bk-submit${!isValid ? " disabled" : ""}${status === "sending" ? " sending" : ""}`}
               onClick={handleSubmit}
@@ -493,7 +451,7 @@ function NavIcon({ name }: { name: string }) {
 }
 
 // ─── HEADER ───────────────────────────────────────────────────────────────────
-function Header({ activePage, setActivePage, openBooking }: { activePage: string; setActivePage: (p: string) => void; openBooking: () => void }) {
+function Header({ activePage, setActivePage, openBooking }: { activePage: Page; setActivePage: (p: Page) => void; openBooking: () => void }) {
   return (
     <header className="desktop-header" role="banner">
       <a href="#main-content" className="skip-link">Salta al contenuto principale</a>
@@ -519,7 +477,7 @@ function Header({ activePage, setActivePage, openBooking }: { activePage: string
 }
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
-function MobileNav({ activePage, setActivePage }: { activePage: string; setActivePage: (p: string) => void }) {
+function MobileNav({ activePage, setActivePage }: { activePage: Page; setActivePage: (p: Page) => void }) {
   const items = [
     { icon: "home",     label: "Home",     action: () => { setActivePage("home"); goTo("#home"); } },
     { icon: "menu",     label: "Menu",     action: () => setActivePage("menu-page") },
@@ -587,7 +545,7 @@ function Tagline() {
 }
 
 // ─── MENU SECTION ─────────────────────────────────────────────────────────────
-function MenuSection({ setActivePage }: { setActivePage: (p: string) => void }) {
+function MenuSection({ setActivePage }: { setActivePage: (p: Page) => void }) {
   return (
     <section id="menu" className="section menu-section" aria-labelledby="menu-heading">
       {/* Testo SEO invisibile */}
@@ -643,7 +601,7 @@ function LocandaSection() {
         <h2 id="locanda-heading">La Locanda.</h2>
         {/* Testo SEO invisibile */}
         <p className="sr-only">
-          Ristorante a Carrara aperto nel 2021 in Via XX Settembre 21. Cucina toscana con prodotti locali di Massa-Carrara.
+          Ristorante a Carrara aperto nel 2021 in Piazza delle Erbe 1. Cucina toscana con prodotti locali di Massa-Carrara.
           Ambiente familiare e accogliente nel centro storico di Carrara, vicino alle famose cave di marmo.
           Ideale per cene in coppia, pranzi in famiglia e gruppi. Prenotazione online disponibile.
         </p>
@@ -660,7 +618,7 @@ function LocandaSection() {
       <div className="locanda-img-wrap">
         <img
           src={publicImg("locanda-esterno.jpg")}
-          alt="L'esterno del ristorante Locanda Patrizia in Via XX Settembre 21, centro storico di Carrara"
+          alt="L'esterno del ristorante Locanda Patrizia in Piazza delle Erbe 1, centro storico di Carrara"
           className="locanda-cover-img"
           loading="lazy"
           decoding="async"
@@ -739,8 +697,8 @@ function Footer({ openBooking }: { openBooking: () => void }) {
     <footer id="contatti" className="footer reveal" role="contentinfo" aria-label="Informazioni di contatto Locanda Patrizia">
       {/* Testo SEO invisibile */}
       <p className="sr-only">
-        Locanda Patrizia, ristorante a Carrara (MS) in Via XX Settembre 21.
-        Prenotazioni: +39 0585 123456 oppure online su locandapatrizia.it.
+        Locanda Patrizia, ristorante a Carrara (MS) in Piazza delle Erbe 1.
+        Prenotazioni: +39 0585 873443 oppure online su locandapatrizia.it.
         Cucina toscana, pesce fresco e pasta artigianale. Aperto dal giovedì al martedì, cena dalle 19:30.
         Sabato e domenica anche a pranzo. Parcheggio nelle vicinanze. Accesso disabili. Carta di credito accettata.
       </p>
@@ -758,9 +716,9 @@ function Footer({ openBooking }: { openBooking: () => void }) {
         <div>
           <h3 className="footer-h">Contatti</h3>
           <address style={{ fontStyle: "normal" }}>
-            <p>Via XX Settembre, 21<br />54033 Carrara (MS)</p>
-            <p><a href="tel:+390585123456" className="footer-link" aria-label="Chiama il ristorante Locanda Patrizia"><strong>+39 0585 123456</strong></a></p>
-            <p><a href="mailto:info@locandapatrizia.it" className="footer-link">info@locandapatrizia.it</a></p>
+            <p>Piazza delle Erbe, 1<br />54033 Carrara (MS)</p>
+            <p><a href="tel:+390585873443" className="footer-link" aria-label="Chiama il ristorante Locanda Patrizia"><strong>+39 0585 873443</strong></a></p>
+            <p><a href="mailto:locandapatriziaa@gmail.com" className="footer-link">locandapatriziaa@gmail.com</a></p>
           </address>
           <button className="gold-btn" onClick={openBooking} style={{ marginTop: "14px" }} aria-label="Prenota un tavolo al ristorante Locanda Patrizia di Carrara">
             Prenota ora
@@ -769,7 +727,7 @@ function Footer({ openBooking }: { openBooking: () => void }) {
         <div>
           <h3 className="footer-h">Dove siamo</h3>
           <p>Nel cuore di Carrara, a pochi passi dal centro storico e dalle cave di marmo.</p>
-          <button className="footer-link-btn" onClick={openMaps} aria-label="Apri Locanda Patrizia in Google Maps — Via XX Settembre 21, Carrara">
+          <button className="footer-link-btn" onClick={openMaps} aria-label="Apri Locanda Patrizia in Google Maps — Piazza delle Erbe 1, Carrara">
             → Apri in Google Maps
           </button>
           <h3 className="footer-h" style={{ marginTop: "16px" }}>Seguici</h3>
@@ -779,7 +737,7 @@ function Footer({ openBooking }: { openBooking: () => void }) {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2025 Locanda Patrizia — Via XX Settembre 21, Carrara</span>
+        <span>© 2025 Locanda Patrizia — Piazza delle Erbe 1, Carrara</span>
         <span className="footer-legal-links">
           <a href={PRIVACY_URL} className="footer-bottom-link">Privacy Policy</a>
           {" · "}
@@ -790,110 +748,38 @@ function Footer({ openBooking }: { openBooking: () => void }) {
   );
 }
 
-// ─── MENU PAGE ────────────────────────────────────────────────────────────────
-function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: () => void }) {
-  const [activeTab, setActiveTab] = useState<"antipasti" | "primi" | "secondi">("antipasti");
-  const tabs = [
-    { key: "antipasti" as const, label: "Antipasti",      sub: "Per iniziare" },
-    { key: "primi"     as const, label: "Primi Piatti",   sub: "Paste & risotti" },
-    { key: "secondi"   as const, label: "Secondi Piatti", sub: "Carne & pesce" },
-  ];
-  const items = menuData[activeTab];
-  return (
-    <div className="menu-page">
-      {/* Testo SEO invisibile per la menu page */}
-      <p className="sr-only">
-        Menu del ristorante Locanda Patrizia a Carrara (MS). Cucina toscana autentica con pasta fresca artigianale,
-        antipasti creativi di mare e terra, secondi di carne chianina e pesce fresco. Prezzi accessibili per una cena
-        di qualità a Carrara. Prenotazione online disponibile su questo sito.
-      </p>
-      <div className="menu-hero" aria-label="Menu del ristorante Locanda Patrizia a Carrara">
-        <img
-          className="menu-hero-img"
-          src={menuCover}
-          alt="Il menu del ristorante Locanda Patrizia a Carrara — cucina toscana e creativa"
-          loading="eager"
-          decoding="async"
-          width="1200"
-          height="600"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-        />
-        <div className="menu-hero-shade" aria-hidden="true" />
-        <div className="menu-hero-content">
-          <button className="back-btn" onClick={onBack} aria-label="Torna alla home page della Locanda Patrizia">
-            ← Torna alla home
-          </button>
-          <div className="menu-hero-logo" aria-hidden="true">
-            <img src={logo} alt="" width="50" height="50" loading="eager" />
-          </div>
-          <p className="menu-hero-eyebrow">Locanda Patrizia · Carrara</p>
-          <h1 className="menu-hero-title">La nostra cucina</h1>
-          <p className="menu-hero-subtitle">Ingredienti selezionati, ricette genuine, passione artigianale.</p>
-        </div>
-      </div>
-
-      <div className="menu-tabs-wrap" role="navigation" aria-label="Sezioni del menu della Locanda Patrizia">
-        <div className="menu-tabs" role="tablist">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              className={`menu-tab${activeTab === tab.key ? " active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-              role="tab"
-              aria-selected={activeTab === tab.key}
-              aria-controls={`menu-panel-${tab.key}`}
-            >
-              <span className="tab-label">{tab.label}</span>
-              <span className="tab-sub">{tab.sub}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="menu-body" id={`menu-panel-${activeTab}`} role="tabpanel" aria-label={tabs.find(t => t.key === activeTab)?.label}>
-        <div className="menu-section-title" aria-hidden="true">
-          <span className="menu-ornament">✦</span>
-          <h2>{tabs.find(t => t.key === activeTab)?.label}</h2>
-          <span className="menu-ornament">✦</span>
-        </div>
-
-        <ul className="menu-items-list" aria-label={`${tabs.find(t => t.key === activeTab)?.label} — Locanda Patrizia Carrara`}>
-          {items.map((item, i) => (
-            <li className="menu-item" key={i} style={{ animationDelay: `${i * 50}ms` }}>
-              <div className="menu-item-info">
-                <p className="menu-item-name">{item.name}</p>
-                {"tag" in item && item.tag && (
-                  <span className="menu-item-tag" aria-label={`Allergeni: ${item.tag}`}>Allergeni: {item.tag}</span>
-                )}
-              </div>
-              <div className="menu-item-separator" aria-hidden="true" />
-              <span className="menu-item-price" aria-label={`Prezzo: ${item.price} euro`}>{item.price} €</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="menu-page-footer">
-          <p className="menu-note">
-            I prezzi sono espressi in euro e includono il servizio.<br />
-            Per informazioni sugli allergeni, il personale di sala è a vostra disposizione.
-          </p>
-          <div className="menu-footer-divider" aria-hidden="true"><span className="menu-ornament small">✦</span></div>
-          <button className="menu-reserve-btn" onClick={openBooking} aria-label="Prenota un tavolo al ristorante Locanda Patrizia di Carrara">
-            Prenota il tuo tavolo
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [activePage,  setActivePage]  = useState("home");
-  const [bookingOpen, setBookingOpen] = useState(false);
+  const [activePage, setActivePageState] = useState<Page>(() => routeToPage());
+  const [bookingOpen, setBookingOpen] = useState(() => isBookingRoute());
 
-  const openBooking  = useCallback(() => setBookingOpen(true),  []);
-  const closeBooking = useCallback(() => setBookingOpen(false), []);
+  const setActivePage = useCallback((page: Page) => {
+    setActivePageState(page);
+    const nextPath = pagePath(page);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ page }, "", nextPath);
+    }
+  }, []);
+
+  const openBooking = useCallback(() => setBookingOpen(true), []);
+  const closeBooking = useCallback(() => {
+    setBookingOpen(false);
+    if (window.location.pathname.replace(/\/$/, "") === "/prenota") {
+      window.history.replaceState({ page: "home" }, "", "/");
+    }
+  }, []);
+
+  useEffect(() => {
+    const syncRoute = () => {
+      setActivePageState(routeToPage());
+      setBookingOpen(isBookingRoute());
+    };
+
+    if (isBookingRoute()) setBookingOpen(true);
+    window.addEventListener("popstate", syncRoute);
+    return () => window.removeEventListener("popstate", syncRoute);
+  }, []);
 
   useEffect(() => {
     const els = Array.from(document.querySelectorAll(".reveal"));
@@ -915,7 +801,9 @@ export default function App() {
       <Header activePage={activePage} setActivePage={setActivePage} openBooking={openBooking} />
       <main id="main-content">
         {activePage === "menu-page" ? (
-          <MenuPage onBack={() => setActivePage("home")} openBooking={openBooking} />
+          <Suspense fallback={null}>
+            <MenuPage onBack={() => setActivePage("home")} openBooking={openBooking} />
+          </Suspense>
         ) : (
           <>
             <Hero openBooking={openBooking} />
