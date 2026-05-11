@@ -67,17 +67,10 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
           height="1200"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
-        <div className="menu-hero-shade" aria-hidden="true" />
         <div className="menu-hero-content">
           <button className="back-btn" onClick={onBack} aria-label="Torna alla home page della Locanda Patrizia">
             ← Torna alla home
           </button>
-          <div className="menu-hero-logo" aria-hidden="true">
-            <img src={logo} alt="" width="50" height="50" loading="eager" />
-          </div>
-          <p className="menu-hero-eyebrow">Locanda Patrizia · Carrara</p>
-          <h1 className="menu-hero-title">La nostra cucina</h1>
-          <p className="menu-hero-subtitle">Ingredienti selezionati, ricette genuine, passione artigianale.</p>
         </div>
       </div>
 
