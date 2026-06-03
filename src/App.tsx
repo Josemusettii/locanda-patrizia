@@ -38,6 +38,7 @@ import esternoCarrara from "./assets/esterno-carrara.webp";
 import menuCover      from "./assets/menu-cover.webp";
 
 const MenuPage = lazy(() => import("./MenuPage"));
+const MenuPrintPage = lazy(() => import("./pages/MenuPrintPage"));
 
 // ─── EMAILJS CONFIG ───────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = "service_b8n6lq3";
@@ -58,17 +59,24 @@ function goTo(id: string){ document.querySelector(id)?.scrollIntoView({ behavior
 type Photo = { title: string; alt: string; img: string; fallback?: string; pos?: string; };
 type BookingStatus = "idle" | "sending" | "success" | "error";
 
-type Page = "home" | "menu-page";
+type Page = "home" | "menu-page" | "menu-print";
 
 const routeToPage = (): Page => {
   if (typeof window === "undefined") return "home";
-  return window.location.pathname.replace(/\/$/, "") === "/menu" ? "menu-page" : "home";
+  const path = window.location.pathname.replace(/\/$/, "");
+  if (path === "/admin/menu-stampa") return "menu-print";
+  if (path === "/menu") return "menu-page";
+  return "home";
 };
 
 const isBookingRoute = () =>
   typeof window !== "undefined" && window.location.pathname.replace(/\/$/, "") === "/prenota";
 
-const pagePath = (page: Page) => page === "menu-page" ? "/menu" : "/";
+const pagePath = (page: Page) => {
+  if (page === "menu-page") return "/menu";
+  if (page === "menu-print") return "/admin/menu-stampa";
+  return "/";
+};
 
 // ─── DATI ─────────────────────────────────────────────────────────────────────
 const dishes: Photo[] = [
@@ -94,16 +102,21 @@ const gallery: Photo[] = [
 function SEOHead({ page }: { page: string }) {
   useEffect(() => {
     const isMenu = page === "menu-page";
+    const isPrintMenu = page === "menu-print";
 
-    const title = isMenu
+    const title = isPrintMenu
+      ? "Menu Stampa — Locanda Patrizia"
+      : isMenu
       ? "Menu Ristorante — Locanda Patrizia | Carrara (MS)"
       : "Locanda Patrizia | Ristorante a Carrara — Cucina Toscana & Creativa";
 
-    const desc = isMenu
+    const desc = isPrintMenu
+      ? "Area riservata per stampare e salvare in PDF il menu della Locanda Patrizia."
+      : isMenu
       ? "Menu della Locanda Patrizia a Carrara: antipasti di mare e terra, pasta fresca artigianale, secondi di carne e pesce. Cucina toscana e creativa. Prenota il tuo tavolo."
       : "Locanda Patrizia, ristorante nel centro storico di Carrara (MS). Cucina toscana autentica e creativa con ingredienti selezionati. Aperto a cena tutti i giorni tranne mercoledì, pranzo sabato e domenica. Prenota online.";
 
-    const canonical = isMenu ? `${SITE_URL}/menu` : SITE_URL;
+    const canonical = isPrintMenu ? `${SITE_URL}/admin/menu-stampa` : isMenu ? `${SITE_URL}/menu` : SITE_URL;
 
     document.title = title;
 
@@ -120,7 +133,7 @@ function SEOHead({ page }: { page: string }) {
 
     // Core meta
     setMeta('meta[name="description"]',         "content", desc);
-    setMeta('meta[name="robots"]',              "content", "index, follow, max-snippet:-1, max-image-preview:large");
+    setMeta('meta[name="robots"]',              "content", isPrintMenu ? "noindex, nofollow" : "index, follow, max-snippet:-1, max-image-preview:large");
     setMeta('meta[name="author"]',              "content", "Locanda Patrizia");
     setMeta('meta[name="geo.region"]',          "content", "IT-MS");
     setMeta('meta[name="geo.placename"]',       "content", "Carrara");
@@ -754,6 +767,7 @@ function Footer({ openBooking }: { openBooking: () => void }) {
 export default function App() {
   const [activePage, setActivePageState] = useState<Page>(() => routeToPage());
   const [bookingOpen, setBookingOpen] = useState(() => isBookingRoute());
+  const isPrintPage = activePage === "menu-print";
 
   const setActivePage = useCallback((page: Page) => {
     setActivePageState(page);
@@ -793,15 +807,24 @@ export default function App() {
   }, [activePage]);
 
   useEffect(() => {
-    if (activePage === "menu-page") window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    if (activePage === "menu-page" || activePage === "menu-print") {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    }
   }, [activePage]);
 
   return (
     <>
       <SEOHead page={activePage} />
-      <Header activePage={activePage} setActivePage={setActivePage} openBooking={openBooking} />
+      {!isPrintPage && <Header activePage={activePage} setActivePage={setActivePage} openBooking={openBooking} />}
       <main id="main-content">
-        {activePage === "menu-page" ? (
+        {activePage === "menu-print" ? (
+          <Suspense fallback={null}>
+            <MenuPrintPage
+              onBack={() => setActivePage("home")}
+              openMenu={() => setActivePage("menu-page")}
+            />
+          </Suspense>
+        ) : activePage === "menu-page" ? (
           <Suspense fallback={null}>
             <MenuPage onBack={() => setActivePage("home")} openBooking={openBooking} />
           </Suspense>
@@ -816,8 +839,8 @@ export default function App() {
           </>
         )}
       </main>
-      <MobileNav activePage={activePage} setActivePage={setActivePage} />
-      <FloatingBookingButton openBooking={openBooking} />
+      {!isPrintPage && <MobileNav activePage={activePage} setActivePage={setActivePage} />}
+      {!isPrintPage && <FloatingBookingButton openBooking={openBooking} />}
       {bookingOpen && <BookingModal onClose={closeBooking} />}
     </>
   );

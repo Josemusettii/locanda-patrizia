@@ -1,73 +1,135 @@
-# React + TypeScript + Vite
+# Locanda Patrizia
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sito React/Vite della Locanda Patrizia con menu centrale collegato a Supabase.
 
-Currently, two official plugins are available:
+## Menu Centrale
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Il menu è pensato come unica sorgente dati:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+Supabase menu -> /menu pubblico -> /admin/menu-stampa PDF
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+In futuro il flusso potrà diventare:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+WhatsApp -> automazione/API -> Supabase menu -> sito + stampa PDF aggiornati
 ```
+
+Per ora WhatsApp, Twilio e Make non sono implementati. Il codice però è già diviso in servizi e componenti per poterli aggiungere senza rifare il sito.
+
+## Variabili Ambiente
+
+Crea un file `.env` locale e aggiungi:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_ADMIN_MENU_PASSWORD=
+```
+
+Su Vercel inserisci le stesse variabili in:
+
+```text
+Project Settings -> Environment Variables
+```
+
+## Supabase
+
+1. Crea un progetto Supabase.
+2. Apri SQL Editor.
+3. Esegui il file:
+
+```text
+supabase/menu.sql
+```
+
+La tabella creata è `public.menu`:
+
+```text
+id uuid
+categoria text
+nome text
+descrizione text
+prezzo numeric
+disponibile boolean
+ordine integer
+created_at timestamptz
+```
+
+Categorie previste:
+
+```text
+antipasti
+primi
+secondi
+dolci
+vini
+```
+
+Il sito mostra solo le righe con `disponibile = true`.
+
+## Pagine
+
+`/menu`
+
+Pagina pubblica per i clienti. Mostra il menu online, senza pulsante stampa/PDF.
+
+`/admin/menu-stampa`
+
+Pagina privata per il titolare. Chiede la password impostata in `VITE_ADMIN_MENU_PASSWORD` e poi mostra il menu A4 con pulsante `Stampa / Salva PDF`.
+
+## Fallback
+
+Se Supabase non è configurato, il sito usa un menu locale di fallback in:
+
+```text
+src/lib/fallbackMenu.js
+```
+
+Questo evita che `/menu` risulti vuota durante sviluppo o prima della configurazione Supabase.
+
+## Struttura Menu
+
+```text
+src/lib/supabaseClient.js
+src/lib/menuService.js
+src/lib/menuConfig.js
+src/lib/fallbackMenu.js
+src/hooks/useMenuItems.js
+src/components/menu/MenuCard.jsx
+src/components/menu/MenuSection.jsx
+src/components/menu/MenuStatus.jsx
+src/pages/MenuPrintPage.jsx
+```
+
+`menuService.js` è il punto centrale per leggere il database. In futuro qui si potrà aggiungere realtime Supabase.
+
+## Futuro WhatsApp
+
+Per arrivare ai comandi tipo:
+
+```text
+aggiungi Vermentino 22 ai vini
+nascondi Polpo
+cambia prezzo Ravioli 16
+```
+
+servirà un livello server/automazione:
+
+1. WhatsApp Business, Twilio o Make riceve il messaggio.
+2. Un parser trasforma il testo in un comando strutturato.
+3. Una API server aggiorna Supabase usando una service role key.
+4. Il sito e la pagina stampa leggono la tabella aggiornata.
+5. Eventualmente Supabase Realtime notifica il frontend.
+
+Importante: la service role key non deve mai stare nel frontend.
+
+## Comandi
+
+```bash
+npm install
+npm run dev
+npm run build
+```
+

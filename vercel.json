@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/menu", "destination": "/" },
+    { "source": "/admin/menu-stampa", "destination": "/" },
     { "source": "/prenota", "destination": "/" }
   ]
 }

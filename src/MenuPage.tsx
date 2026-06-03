@@ -1,50 +1,21 @@
 import logo from "./assets/logo.webp";
+import MenuSection from "./components/menu/MenuSection";
+import { MenuEmpty, MenuError, MenuLoading } from "./components/menu/MenuStatus";
+import { MENU_CATEGORIES } from "./lib/menuConfig";
+import { groupMenuByCategory } from "./lib/menuService";
+import { useMenuItems } from "./hooks/useMenuItems";
 
 const menuHero = "/menu-hero.jpg";
 
-type MenuKey = "antipasti" | "primi" | "secondi";
-type MenuItem = {
-  name: string;
-  description: string;
-  price: number;
-  tag?: string;
-};
-
-const menuData: Record<MenuKey, MenuItem[]> = {
-  antipasti: [
-    { name: "Lingua Salmistrata", description: "Con salsa verde, salsa tonnata e gel al lime", price: 18 },
-    { name: "L'Uovo al Purgatorio", description: "Uovo bio, fonduta di Parmigiano Reggiano, olio al basilico e crostone di pane", price: 12 },
-    { name: "Tacos Fusion", description: "Pulled pork artigianale, guacamole e crème fraîche all'erba cipollina", price: 16 },
-    { name: "Tacos Summer", description: "Tartare di tonno, guacamole, crème fraîche all'erba cipollina e gel al mojito", price: 16 },
-    { name: "La Chianina", description: "Battuta al coltello di pura Chianina e i suoi condimenti classici", price: 16 },
-    { name: "Il Fresco", description: "Frittino di mare del giorno secondo mercato", price: 14 },
-    { name: "Riso al Salto", description: "Riso cacio e pepe croccante, tartare di gambero blu, gel al mango e teriyaki", price: 17 },
-  ],
-  primi: [
-    { name: "Ricordo di Baccalà", description: "Cappellacci fatti a mano con ripieno di baccalà marinato", price: 19 },
-    { name: "Bottoni alla Quaglia", description: "Ripieni di quaglia su crema di provola affumicata e il suo fondo", price: 18 },
-    { name: "La Tradizione", description: "Lasagnette verdi \"stordellata\" con il tipico ripieno dei tordelli alla carrarese", price: 15 },
-    { name: "Cacciagione", description: "Pappardelle al cervo", price: 18 },
-    { name: "Mare e Terra", description: "Ravioli del plin ai gamberi e lardo di Colonnata su crema di asparagi", price: 20 },
-    { name: "Lo Spaghetto", description: "Monograno Felicetti, vongole veraci sgusciate, zest di limone e bottarga", price: 25 },
-  ],
-  secondi: [
-    { name: "Il Polpo", description: "In doppia cottura su crema di patate al limone, cipolla croccante e maionese", price: 22 },
-    { name: "Pollo alla Birra", description: "Ripieno di verdure e salsiccia con patate duchesse", price: 17 },
-    { name: "La Vaporata", description: "Calamari e gamberi al vapore con verdurine marinate", price: 20 },
-    { name: "L'Agnello", description: "Costolette alle erbe di montagna, patate novelle e fondo bruno", price: 25 },
-    { name: "Il Nostro Piccione", description: "Con crema di carote, radicchio e il suo fondo", price: 24 },
-  ],
-};
-
 // ─── MENU PAGE ────────────────────────────────────────────────────────────────
 export default function MenuPage({ onBack, openBooking }: { onBack: () => void; openBooking: () => void }) {
-  const tabs = [
-    { key: "antipasti" as const, label: "Antipasti",      sub: "Per iniziare" },
-    { key: "primi"     as const, label: "Primi Piatti",   sub: "Paste & risotti" },
-    { key: "secondi"   as const, label: "Secondi Piatti", sub: "Carne & pesce" },
-  ];
-  const jumpTo = (key: MenuKey) => {
+  const { items, loading, error } = useMenuItems();
+  const sections = groupMenuByCategory(items);
+  const visibleCategories = MENU_CATEGORIES.filter((category) =>
+    sections.some((section) => section.category === category.key)
+  );
+
+  const jumpTo = (key: string) => {
     document.getElementById(`menu-panel-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -76,7 +47,7 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
 
       <div className="menu-tabs-wrap" role="navigation" aria-label="Sezioni del menu della Locanda Patrizia">
         <div className="menu-tabs">
-          {tabs.map((tab) => (
+          {(visibleCategories.length ? visibleCategories : MENU_CATEGORIES).map((tab) => (
             <button
               key={tab.key}
               className="menu-tab"
@@ -95,30 +66,11 @@ export default function MenuPage({ onBack, openBooking }: { onBack: () => void; 
             <img src={logo} alt="" width="86" height="86" loading="lazy" />
           </div>
 
-          {tabs.map((section) => (
-            <section className="menu-course" id={`menu-panel-${section.key}`} key={section.key} aria-labelledby={`menu-title-${section.key}`}>
-              <div className="menu-section-title">
-                <span aria-hidden="true" />
-                <h2 id={`menu-title-${section.key}`}>{section.label}</h2>
-                <span aria-hidden="true" />
-              </div>
-
-              <ul className="menu-items-list" aria-label={`${section.label} - Locanda Patrizia Carrara`}>
-                {menuData[section.key].map((item, i) => (
-                  <li className="menu-item" key={`${section.key}-${item.name}`} style={{ animationDelay: `${i * 36}ms` }}>
-                    <div className="menu-item-info">
-                      <p className="menu-item-name">{item.name}</p>
-                      <p className="menu-item-desc">{item.description}</p>
-                      {item.tag && (
-                        <span className="menu-item-tag" aria-label={`Allergeni: ${item.tag}`}>Allergeni: {item.tag}</span>
-                      )}
-                    </div>
-                    <div className="menu-item-separator" aria-hidden="true" />
-                    <span className="menu-item-price" aria-label={`Prezzo: ${item.price} euro`}>€ {item.price}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+          {loading && <MenuLoading />}
+          {!loading && error && <MenuError message={error} />}
+          {!loading && !error && sections.length === 0 && <MenuEmpty />}
+          {!loading && !error && sections.map((section) => (
+            <MenuSection category={section.category} items={section.items} key={section.category} />
           ))}
         </div>
 
