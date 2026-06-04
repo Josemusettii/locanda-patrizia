@@ -13,10 +13,10 @@ Supabase menu -> /menu pubblico -> /admin/menu-stampa PDF
 In futuro il flusso potrà diventare:
 
 ```text
-WhatsApp -> automazione/API -> Supabase menu -> sito + stampa PDF aggiornati
+WhatsApp -> Supabase Edge Function -> Supabase menu -> sito + stampa PDF aggiornati
 ```
 
-Per ora WhatsApp, Twilio e Make non sono implementati. Il codice però è già diviso in servizi e componenti per poterli aggiungere senza rifare il sito.
+L'automazione WhatsApp è gestita dalla funzione Supabase `menu-whatsapp`.
 
 ## Variabili Ambiente
 
@@ -107,19 +107,87 @@ src/pages/MenuPrintPage.jsx
 
 ## Futuro WhatsApp
 
-Per arrivare ai comandi tipo:
+La funzione `menu-whatsapp` accetta comandi tipo:
 
 ```text
 aggiungi Vermentino 22 ai vini
 nascondi Polpo
 cambia prezzo Ravioli 16
+mostra Polpo
+aggiungi Lingua 18 agli antipasti descrizione: Con salsa verde
 ```
 
-servirà un livello server/automazione:
+La funzione aggiorna direttamente la tabella `public.menu`, quindi `/menu` e `/admin/menu-stampa` leggono sempre il menu aggiornato.
+
+### Setup Supabase WhatsApp
+
+Esegui anche:
+
+```text
+supabase/whatsapp-menu-automation.sql
+```
+
+Serve per creare `public.menu_command_log`, cioè lo storico dei messaggi ricevuti e delle modifiche fatte.
+
+La funzione Supabase è in:
+
+```text
+supabase/functions/menu-whatsapp/index.ts
+```
+
+Segreti server da configurare su Supabase:
+
+```env
+MENU_WEBHOOK_SECRET=
+WHATSAPP_VERIFY_TOKEN=
+```
+
+`MENU_WEBHOOK_SECRET` protegge il webhook. Non metterlo nel frontend e non committarlo.
+
+Endpoint:
+
+```text
+https://ubrhytaogxwtetihrlyl.supabase.co/functions/v1/menu-whatsapp?secret=IL_TUO_SECRET
+```
+
+Test veloce:
+
+```bash
+curl -X POST "https://ubrhytaogxwtetihrlyl.supabase.co/functions/v1/menu-whatsapp?secret=IL_TUO_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"cambia prezzo Uovo al Purgatorio 12","from":"test"}'
+```
+
+### Collegamento WhatsApp
+
+Con Twilio WhatsApp:
+
+1. Apri il numero WhatsApp/Sandbox Twilio.
+2. In `When a message comes in`, inserisci l'endpoint della funzione.
+3. Metodo: `POST`.
+4. Twilio invierà `Body` con il testo del messaggio.
+5. La funzione risponde automaticamente con un messaggio WhatsApp di conferma.
+
+Con Make o automazioni simili:
+
+1. Ricevi il messaggio WhatsApp.
+2. Fai una richiesta `POST` all'endpoint.
+3. Invia JSON tipo:
+
+```json
+{
+  "message": "aggiungi Vermentino 22 ai vini",
+  "from": "whatsapp:+39..."
+}
+```
+
+### Architettura futura
+
+Il flusso resta:
 
 1. WhatsApp Business, Twilio o Make riceve il messaggio.
 2. Un parser trasforma il testo in un comando strutturato.
-3. Una API server aggiorna Supabase usando una service role key.
+3. La Supabase Edge Function aggiorna Supabase usando la service role key server.
 4. Il sito e la pagina stampa leggono la tabella aggiornata.
 5. Eventualmente Supabase Realtime notifica il frontend.
 
@@ -132,4 +200,3 @@ npm install
 npm run dev
 npm run build
 ```
-
