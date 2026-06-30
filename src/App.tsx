@@ -78,6 +78,45 @@ const pagePath = (page: Page) => {
   return "/";
 };
 
+const bookingReplySubject = (status: "confirm" | "reject", date: string, time: string) =>
+  status === "confirm"
+    ? `Prenotazione confermata - Locanda Patrizia ${date} ${time}`
+    : `Prenotazione non disponibile - Locanda Patrizia ${date} ${time}`;
+
+const bookingReplyBody = (
+  status: "confirm" | "reject",
+  booking: { guest_name: string; date: string; time: string; guests: string; notes: string },
+) => {
+  if (status === "confirm") {
+    return [
+      `Gentile ${booking.guest_name},`,
+      "",
+      `le confermiamo la prenotazione presso Locanda Patrizia per il giorno ${booking.date} alle ore ${booking.time}, per ${booking.guests} persone.`,
+      "",
+      "La aspettiamo.",
+      "",
+      "Locanda Patrizia",
+      "Piazza delle Erbe, 1 - Carrara",
+      "+39 0585 873443",
+    ].join("\n");
+  }
+
+  return [
+    `Gentile ${booking.guest_name},`,
+    "",
+    `ci dispiace, ma per il giorno ${booking.date} alle ore ${booking.time} non abbiamo più disponibilità per ${booking.guests} persone.`,
+    "",
+    "Se desidera, può indicarci un altro orario o un'altra data e saremo felici di verificare una nuova disponibilità.",
+    "",
+    "Locanda Patrizia",
+    "Piazza delle Erbe, 1 - Carrara",
+    "+39 0585 873443",
+  ].join("\n");
+};
+
+const mailtoLink = (to: string, subject: string, body: string) =>
+  `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
 // ─── DATI ─────────────────────────────────────────────────────────────────────
 const dishes: Photo[] = [
   { title: "Capellacci al ricordo di baccalà marinato",           alt: "Capellacci di pasta fresca ripieni di baccalà marinato su fondo cremoso — Locanda Patrizia Carrara",          img: publicImg("ravioli-pomodoro.jpg"), pos: "50% 55%" },
@@ -339,11 +378,29 @@ function BookingModal({ onClose }: { onClose: () => void }) {
     if (!form.guest_name || !form.guest_email || !form.date || !form.time || !form.phone || !form.privacy || !availableSlots.includes(form.time)) return;
     setStatus("sending");
     try {
+      const confirmSubject = bookingReplySubject("confirm", form.date, form.time);
+      const rejectSubject = bookingReplySubject("reject", form.date, form.time);
+      const confirmBody = bookingReplyBody("confirm", form);
+      const rejectBody = bookingReplyBody("reject", form);
       const payload = {
         service_id:  EMAILJS_SERVICE_ID,
         template_id: EMAILJS_TEMPLATE_ID,
         user_id:     EMAILJS_PUBLIC_KEY,
-        template_params: { guest_name: form.guest_name, guest_email: form.guest_email, phone: form.phone, date: form.date, time: form.time, guests: form.guests, notes: form.notes || "—" },
+        template_params: {
+          guest_name: form.guest_name,
+          guest_email: form.guest_email,
+          phone: form.phone,
+          date: form.date,
+          time: form.time,
+          guests: form.guests,
+          notes: form.notes || "—",
+          confirm_subject: confirmSubject,
+          confirm_body: confirmBody,
+          confirm_mailto: mailtoLink(form.guest_email, confirmSubject, confirmBody),
+          reject_subject: rejectSubject,
+          reject_body: rejectBody,
+          reject_mailto: mailtoLink(form.guest_email, rejectSubject, rejectBody),
+        },
       };
       const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
